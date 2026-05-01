@@ -1,6 +1,9 @@
 package study
 
 import (
+	"container/heap"
+	"fmt"
+	"log"
 	"time"
 
 	"github.com/google/uuid"
@@ -15,5 +18,33 @@ type Deck struct {
 	Cards       CardHeap
 }
 
-func (d *Deck) reviewDeck(n int) {
+func (d *Deck) ReviewDeck(n int) {
+	for i := 0; i < n; {
+
+		if len(d.Cards) == 0 {
+			fmt.Println("No Cards in Deck!")
+			break
+		}
+
+		curCard := heap.Pop(&d.Cards).(Card)
+		fmt.Println(curCard.FrontContent)
+		fmt.Println(curCard.BackContent)
+
+		fmt.Println("Input: 0. Again, 1. Hard, 2. Good, 3. Easy")
+
+		var evaluation int
+		_, err := fmt.Scan(&evaluation)
+		if err != nil {
+			fmt.Println("Invalid input!")
+			heap.Push(&d.Cards, curCard)
+			n++
+			continue
+		}
+
+		log.Println(curCard)
+		curCard.EvaluateCard(evaluation)
+		log.Println(curCard)
+
+		heap.Push(&d.Cards, curCard)
+	}
 }

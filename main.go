@@ -94,9 +94,6 @@ func main() {
 		}
 
 		heap.Push(&deck.Cards, card)
-
-		log.Println(card.FrontContent)
-		log.Println(card.BackContent)
 	}
 
 	deck.ReviewDeck(4)
