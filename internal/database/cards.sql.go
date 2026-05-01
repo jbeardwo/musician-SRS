@@ -7,7 +7,6 @@ package database
 
 import (
 	"context"
-	"database/sql"
 
 	"github.com/google/uuid"
 )
@@ -46,8 +45,8 @@ INSERT INTO cards(
 `
 
 type CreateCardParams struct {
-	FrontContent sql.NullString
-	BackContent  sql.NullString
+	FrontContent string
+	BackContent  string
 	DeckID       uuid.UUID
 }
 

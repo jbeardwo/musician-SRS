@@ -1,4 +1,4 @@
-package main
+package study
 
 import (
 	"time"
@@ -12,9 +12,8 @@ type Deck struct {
 	Description string    `json:"description"`
 	CreatedAt   time.Time `json:"created_at"`
 	UserID      uuid.UUID `json:"user_id"`
-	Cards       []Card
+	Cards       CardHeap
 }
 
-func (d *Deck) AddCard(c Card) {
-	d.Cards = append(d.Cards, c)
+func (d *Deck) reviewDeck(n int) {
 }

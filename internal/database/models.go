@@ -13,11 +13,11 @@ import (
 
 type Card struct {
 	ID               uuid.UUID
-	FrontContent     sql.NullString
-	BackContent      sql.NullString
-	Interval         sql.NullInt32
-	EaseFactor       sql.NullFloat64
-	RepetitionsCount sql.NullInt32
+	FrontContent     string
+	BackContent      string
+	Interval         int32
+	EaseFactor       float64
+	RepetitionsCount int32
 	LastReviewedAt   sql.NullTime
 	CreatedAt        time.Time
 	DeckID           uuid.UUID

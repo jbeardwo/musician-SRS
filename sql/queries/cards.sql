@@ -29,5 +29,7 @@ INSERT INTO cards(
   last_reviewed_at,
   created_at,
   deck_id;
+
+
 -- name: DeleteCards :exec
   DELETE FROM cards;

@@ -1,11 +1,13 @@
 package main
 
 import (
+	"container/heap"
 	"context"
 	"database/sql"
 	"log"
 
 	"github.com/jbeardwo/musician-SRS/internal/database"
+	"github.com/jbeardwo/musician-SRS/internal/study"
 	_ "github.com/lib/pq"
 )
 
@@ -32,12 +34,17 @@ func main() {
 		log.Fatal(err)
 	}
 
+	err = dbQueries.DeleteCards(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	dbUser, err := dbQueries.CreateUser(ctx, "wilford@brimley.com")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	user := User{
+	user := study.User{
 		ID:        dbUser.ID,
 		CreatedAt: dbUser.CreatedAt,
 		UpdatedAt: dbUser.UpdatedAt,
@@ -55,7 +62,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	deck := Deck{
+	deck := study.Deck{
 		ID:          dbDeck.ID,
 		Title:       dbDeck.Title,
 		Description: dbDeck.Description,
@@ -63,9 +70,34 @@ func main() {
 		UserID:      dbDeck.UserID,
 	}
 
-	log.Println(user.ID)
-	log.Println(deck.ID)
-	log.Println(deck.UserID)
-	log.Println(deck.Title)
-	log.Println(deck.Description)
+	for _, note := range study.CommonNotes {
+		cardParams := database.CreateCardParams{
+			FrontContent: note + " Major Scale",
+			BackContent:  "DO IT",
+			DeckID:       deck.ID,
+		}
+		dbCard, err := dbQueries.CreateCard(ctx, cardParams)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		card := study.Card{
+			ID:               dbCard.ID,
+			FrontContent:     dbCard.FrontContent,
+			BackContent:      dbCard.BackContent,
+			Interval:         dbCard.Interval,
+			EaseFactor:       dbCard.EaseFactor,
+			RepetitionsCount: dbCard.RepetitionsCount,
+			LastReviewedAt:   dbCard.LastReviewedAt,
+			CreatedAt:        dbCard.CreatedAt,
+			DeckID:           dbCard.DeckID,
+		}
+
+		heap.Push(&deck.Cards, card)
+
+		log.Println(card.FrontContent)
+		log.Println(card.BackContent)
+	}
+
+	deck.ReviewDeck(4)
 }
