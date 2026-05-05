@@ -12,3 +12,7 @@ RETURNING id, title, description, created_at, user_id;
 
 -- name: DeleteDecks :exec
   DELETE FROM decks;
+
+-- name: GetDecksByUser :many
+SELECT * FROM decks
+WHERE user_id = $1;

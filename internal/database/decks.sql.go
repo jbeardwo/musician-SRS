@@ -50,3 +50,37 @@ func (q *Queries) DeleteDecks(ctx context.Context) error {
 	_, err := q.db.ExecContext(ctx, deleteDecks)
 	return err
 }
+
+const getDecksByUser = `-- name: GetDecksByUser :many
+SELECT id, title, description, created_at, user_id FROM decks
+WHERE user_id = $1
+`
+
+func (q *Queries) GetDecksByUser(ctx context.Context, userID uuid.UUID) ([]Deck, error) {
+	rows, err := q.db.QueryContext(ctx, getDecksByUser, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Deck
+	for rows.Next() {
+		var i Deck
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.Description,
+			&i.CreatedAt,
+			&i.UserID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

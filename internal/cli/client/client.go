@@ -1,0 +1,111 @@
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"os"
+	"time"
+
+	"github.com/google/uuid"
+)
+
+type clientConfig struct {
+	baseURL       string
+	currentUserID uuid.UUID
+}
+
+func main() {
+	clientCfg := clientConfig{
+		baseURL:       "http://localhost:8080",
+		currentUserID: uuid.Nil,
+	}
+
+	var command string
+	_, err := fmt.Scan(&command)
+	if err != nil {
+		fmt.Println("Invalid input!")
+	}
+
+	switch command {
+	case "health":
+		clientCfg.healthCheck()
+	case "login":
+		clientCfg.clientLogin()
+	case "decks":
+		clientCfg.getDecks()
+	}
+}
+
+func (cfg *clientConfig) healthCheck() {
+	fmt.Println("Test 1: Health Check")
+
+	resp, err := http.Get(cfg.baseURL + "/api/healthz")
+	if err != nil {
+		fmt.Printf("✗ Health check failed to connect: %v\n", err)
+		os.Exit(1)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusOK {
+		fmt.Println("✓ Health check passed")
+	} else {
+		fmt.Printf("✗ Health check failed (HTTP %d)\n", resp.StatusCode)
+	}
+}
+
+func (cfg *clientConfig) clientLogin() {
+	fmt.Print("Enter email: ")
+	var email string
+	_, err := fmt.Scan(&email)
+	if err != nil {
+		fmt.Println("Invalid input!")
+		return
+	}
+
+	payload := struct {
+		Email string `json:"email"`
+	}{
+		Email: email,
+	}
+
+	dat, err := json.Marshal(payload)
+	if err != nil {
+		fmt.Printf("Error encoding JSON: %s\n", err)
+		return
+	}
+
+	resp, err := http.Post(cfg.baseURL+"/api/login", "application/json", bytes.NewBuffer(dat))
+	if err != nil {
+		fmt.Printf("Error making request: %s\n", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		fmt.Printf("Login failed: status code %d\n", resp.StatusCode)
+		return
+	}
+
+	type loginResponse struct {
+		ID        uuid.UUID `json:"id"`
+		CreatedAt time.Time `json:"created_at"`
+		UpdatedAt time.Time `json:"updated_at"`
+		Email     string    `json:"email"`
+	}
+
+	resBody := loginResponse{}
+	decoder := json.NewDecoder(resp.Body)
+	if err := decoder.Decode(&resBody); err != nil {
+		fmt.Printf("Error decoding response: %s\n", err)
+		return
+	}
+
+	fmt.Printf("✓ Success! Logged in as: %s (ID: %s)\n", resBody.Email, resBody.ID)
+	cfg.currentUserID = resBody.ID
+	fmt.Printf("✓ Success! updated local User (ID: %s)\n", cfg.currentUserID)
+}
+
+func (cfg *clientConfig) getDecks() {
+}
