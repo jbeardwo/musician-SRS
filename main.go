@@ -169,7 +169,7 @@ func (cfg *apiConfig) getDecksHandler(w http.ResponseWriter, r *http.Request) {
 
 	var dbDecks []database.Deck
 	userID, err := uuid.Parse(userIDstr)
-	if err != nil {
+	if err != nil || userID == uuid.Nil {
 		respondWithError(w, 400, "Invalid user ID")
 		return
 	}

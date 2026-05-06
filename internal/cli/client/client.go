@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jbeardwo/musician-SRS/internal/study"
 )
 
 type clientConfig struct {
@@ -23,18 +24,20 @@ func main() {
 	}
 
 	var command string
-	_, err := fmt.Scan(&command)
-	if err != nil {
-		fmt.Println("Invalid input!")
-	}
+	for {
+		_, err := fmt.Scan(&command)
+		if err != nil {
+			fmt.Println("Invalid input!")
+		}
 
-	switch command {
-	case "health":
-		clientCfg.healthCheck()
-	case "login":
-		clientCfg.clientLogin()
-	case "decks":
-		clientCfg.getDecks()
+		switch command {
+		case "health":
+			clientCfg.healthCheck()
+		case "login":
+			clientCfg.clientLogin()
+		case "decks":
+			clientCfg.clientGetDecks()
+		}
 	}
 }
 
@@ -107,5 +110,28 @@ func (cfg *clientConfig) clientLogin() {
 	fmt.Printf("✓ Success! updated local User (ID: %s)\n", cfg.currentUserID)
 }
 
-func (cfg *clientConfig) getDecks() {
+func (cfg *clientConfig) clientGetDecks() {
+	fullURL := fmt.Sprintf("%s/api/decks?user_id=%s", cfg.baseURL, cfg.currentUserID)
+
+	resp, err := http.Get(fullURL)
+	if err != nil {
+		fmt.Printf("Error fetching decks: %v\n", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		fmt.Printf("Failed to get decks: status %d\n", resp.StatusCode)
+		return
+	}
+	var decks []study.Deck
+
+	if err := json.NewDecoder(resp.Body).Decode(&decks); err != nil {
+		fmt.Printf("Error decoding decks: %v\n", err)
+		return
+	}
+
+	for _, d := range decks {
+		fmt.Printf("- %s\n", d.Title)
+	}
 }
