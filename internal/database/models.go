@@ -16,19 +16,22 @@ type Card struct {
 	FrontContent     string
 	BackContent      string
 	Interval         int32
+	Target           int32
 	EaseFactor       float64
 	RepetitionsCount int32
 	LastReviewedAt   sql.NullTime
+	LastReviewedNum  int32
 	CreatedAt        time.Time
 	DeckID           uuid.UUID
 }
 
 type Deck struct {
-	ID          uuid.UUID
-	Title       string
-	Description string
-	CreatedAt   time.Time
-	UserID      uuid.UUID
+	ID           uuid.UUID
+	Title        string
+	Description  string
+	CreatedAt    time.Time
+	UserID       uuid.UUID
+	TotalReviews int32
 }
 
 type User struct {

@@ -5,8 +5,8 @@ type CardHeap []Card
 func (h CardHeap) Len() int { return len(h) }
 func (h CardHeap) Less(i, j int) bool {
 	// 1. Sort by Interval first
-	if h[i].Interval != h[j].Interval {
-		return h[i].Interval < h[j].Interval
+	if h[i].Target != h[j].Target {
+		return h[i].Target < h[j].Target
 	}
 	// 2. If intervals are equal, prioritize cards never reviewed (New Cards)
 	if !h[i].LastReviewedAt.Valid && h[j].LastReviewedAt.Valid {

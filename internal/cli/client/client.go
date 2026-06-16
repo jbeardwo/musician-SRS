@@ -15,16 +15,21 @@ import (
 type clientConfig struct {
 	baseURL       string
 	currentUserID uuid.UUID
+	decks         []study.Deck
 }
 
 func main() {
 	clientCfg := clientConfig{
-		baseURL:       "http://localhost:8080",
-		currentUserID: uuid.Nil,
+		baseURL: "http://localhost:8080",
 	}
+
+	clientCfg.clientLogin()
+	clientCfg.clientGetDecks()
 
 	var command string
 	for {
+		fmt.Println("Enter a command:")
+
 		_, err := fmt.Scan(&command)
 		if err != nil {
 			fmt.Println("Invalid input!")
@@ -33,10 +38,8 @@ func main() {
 		switch command {
 		case "health":
 			clientCfg.healthCheck()
-		case "login":
-			clientCfg.clientLogin()
-		case "decks":
-			clientCfg.clientGetDecks()
+		case "study":
+
 		}
 	}
 }
@@ -52,9 +55,9 @@ func (cfg *clientConfig) healthCheck() {
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusOK {
-		fmt.Println("✓ Health check passed")
+		fmt.Println("Health check passed")
 	} else {
-		fmt.Printf("✗ Health check failed (HTTP %d)\n", resp.StatusCode)
+		fmt.Printf("Health check failed (HTTP %d)\n", resp.StatusCode)
 	}
 }
 
@@ -134,4 +137,5 @@ func (cfg *clientConfig) clientGetDecks() {
 	for _, d := range decks {
 		fmt.Printf("- %s\n", d.Title)
 	}
+	cfg.decks = decks
 }

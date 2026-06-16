@@ -81,6 +81,7 @@ func main() {
 		cardParams := database.CreateCardParams{
 			FrontContent: note + " Major Scale",
 			BackContent:  "DO IT",
+			Target:       1,
 			DeckID:       deck.ID,
 		}
 		dbCard, err := dbQueries.CreateCard(ctx, cardParams)
@@ -93,6 +94,7 @@ func main() {
 			FrontContent:     dbCard.FrontContent,
 			BackContent:      dbCard.BackContent,
 			Interval:         dbCard.Interval,
+			Target:           dbCard.Target,
 			EaseFactor:       dbCard.EaseFactor,
 			RepetitionsCount: dbCard.RepetitionsCount,
 			LastReviewedAt:   dbCard.LastReviewedAt,
@@ -106,7 +108,7 @@ func main() {
 	apiCfg := apiConfig{
 		db: dbQueries,
 	}
-	// deck.ReviewDeck(4)
+	deck.ReviewDeck(4)
 	serveMux := http.NewServeMux()
 	serveMux.HandleFunc("GET /api/healthz", readyHandler)
 	serveMux.HandleFunc("POST /api/login", apiCfg.loginHandler)

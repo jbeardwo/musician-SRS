@@ -7,6 +7,8 @@ package database
 
 import (
 	"context"
+	"database/sql"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -17,6 +19,7 @@ INSERT INTO cards(
   front_content,
   back_content,
   interval,
+  target,
   ease_factor,
   repetitions_count,
   last_reviewed_at,
@@ -27,16 +30,18 @@ INSERT INTO cards(
   $1,
   $2,
   1,
+  $3,
   2.5,
   0,
   NULL,
   NOW(),
-  $3
+  $4
 ) RETURNING 
   id,
   front_content,
   back_content,
   interval,
+  target,
   ease_factor,
   repetitions_count,
   last_reviewed_at,
@@ -47,17 +52,37 @@ INSERT INTO cards(
 type CreateCardParams struct {
 	FrontContent string
 	BackContent  string
+	Target       int32
 	DeckID       uuid.UUID
 }
 
-func (q *Queries) CreateCard(ctx context.Context, arg CreateCardParams) (Card, error) {
-	row := q.db.QueryRowContext(ctx, createCard, arg.FrontContent, arg.BackContent, arg.DeckID)
-	var i Card
+type CreateCardRow struct {
+	ID               uuid.UUID
+	FrontContent     string
+	BackContent      string
+	Interval         int32
+	Target           int32
+	EaseFactor       float64
+	RepetitionsCount int32
+	LastReviewedAt   sql.NullTime
+	CreatedAt        time.Time
+	DeckID           uuid.UUID
+}
+
+func (q *Queries) CreateCard(ctx context.Context, arg CreateCardParams) (CreateCardRow, error) {
+	row := q.db.QueryRowContext(ctx, createCard,
+		arg.FrontContent,
+		arg.BackContent,
+		arg.Target,
+		arg.DeckID,
+	)
+	var i CreateCardRow
 	err := row.Scan(
 		&i.ID,
 		&i.FrontContent,
 		&i.BackContent,
 		&i.Interval,
+		&i.Target,
 		&i.EaseFactor,
 		&i.RepetitionsCount,
 		&i.LastReviewedAt,

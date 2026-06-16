@@ -13,9 +13,11 @@ type Card struct {
 	FrontContent     string       `json:"front_content"`
 	BackContent      string       `json:"back_content"`
 	Interval         int32        `json:"interval"`
+	Target           int32        `json:"target"`
 	EaseFactor       float64      `json:"ease_factor"`
 	RepetitionsCount int32        `json:"repetitions_count"`
 	LastReviewedAt   sql.NullTime `json:"last_reviewed_at"`
+	LastReviewedNum  int32        `json:"last_reviewed_num"`
 	CreatedAt        time.Time    `json:"created_at"`
 	DeckID           uuid.UUID    `json:"deck_id"`
 }

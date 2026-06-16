@@ -4,6 +4,7 @@ INSERT INTO cards(
   front_content,
   back_content,
   interval,
+  target,
   ease_factor,
   repetitions_count,
   last_reviewed_at,
@@ -14,16 +15,18 @@ INSERT INTO cards(
   $1,
   $2,
   1,
+  $3,
   2.5,
   0,
   NULL,
   NOW(),
-  $3
+  $4
 ) RETURNING 
   id,
   front_content,
   back_content,
   interval,
+  target,
   ease_factor,
   repetitions_count,
   last_reviewed_at,

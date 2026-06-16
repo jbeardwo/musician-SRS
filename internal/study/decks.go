@@ -10,12 +10,13 @@ import (
 )
 
 type Deck struct {
-	ID          uuid.UUID `json:"id"`
-	Title       string    `json:"title"`
-	Description string    `json:"description"`
-	CreatedAt   time.Time `json:"created_at"`
-	UserID      uuid.UUID `json:"user_id"`
-	Cards       CardHeap
+	ID           uuid.UUID `json:"id"`
+	Title        string    `json:"title"`
+	Description  string    `json:"description"`
+	CreatedAt    time.Time `json:"created_at"`
+	UserID       uuid.UUID `json:"user_id"`
+	TotalReviews int32     `json:"total_reviews"`
+	Cards        CardHeap
 }
 
 func (d *Deck) ReviewDeck(n int) {
@@ -41,9 +42,12 @@ func (d *Deck) ReviewDeck(n int) {
 			continue
 		}
 
-		log.Println(curCard)
+		log.Println(d.TotalReviews, curCard.Target, curCard.Interval)
 		curCard.EvaluateCard(evaluation)
-		log.Println(curCard)
+		d.TotalReviews += 1
+		curCard.LastReviewedNum = d.TotalReviews
+		curCard.Target = d.TotalReviews + curCard.Interval
+		log.Println(d.TotalReviews, curCard.Target, curCard.Interval)
 
 		heap.Push(&d.Cards, curCard)
 	}
