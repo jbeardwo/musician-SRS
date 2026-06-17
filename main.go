@@ -59,9 +59,13 @@ func main() {
 	}
 
 	deckParams := database.CreateDeckParams{
-		Title:       "Deck",
-		Description: "Testing The Program",
-		UserID:      user.ID,
+		Title:            "Deck",
+		Description:      "Testing The Program",
+		UserID:           user.ID,
+		TempoIntervalUp:  5,
+		TempoIntervalDn:  2,
+		PerfectThreshold: 5,
+		BadThreshold:     2,
 	}
 
 	dbDeck, err := dbQueries.CreateDeck(ctx, deckParams)
@@ -70,11 +74,16 @@ func main() {
 	}
 
 	deck := study.Deck{
-		ID:          dbDeck.ID,
-		Title:       dbDeck.Title,
-		Description: dbDeck.Description,
-		CreatedAt:   dbDeck.CreatedAt,
-		UserID:      dbDeck.UserID,
+		ID:               dbDeck.ID,
+		Title:            dbDeck.Title,
+		Description:      dbDeck.Description,
+		CreatedAt:        dbDeck.CreatedAt,
+		UserID:           dbDeck.UserID,
+		TotalReviews:     dbDeck.TotalReviews,
+		TempoIntervalUp:  dbDeck.TempoIntervalUp,
+		TempoIntervalDn:  dbDeck.TempoIntervalDn,
+		PerfectThreshold: dbDeck.PerfectThreshold,
+		BadThreshold:     dbDeck.BadThreshold,
 	}
 
 	for _, note := range study.CommonNotes {
@@ -83,6 +92,7 @@ func main() {
 			BackContent:  "DO IT",
 			Target:       1,
 			DeckID:       deck.ID,
+			Tempo:        50,
 		}
 		dbCard, err := dbQueries.CreateCard(ctx, cardParams)
 		if err != nil {
@@ -100,6 +110,7 @@ func main() {
 			LastReviewedAt:   dbCard.LastReviewedAt,
 			CreatedAt:        dbCard.CreatedAt,
 			DeckID:           dbCard.DeckID,
+			Tempo:            dbCard.Tempo,
 		}
 
 		heap.Push(&deck.Cards, card)

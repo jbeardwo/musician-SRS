@@ -23,8 +23,12 @@ INSERT INTO cards(
   ease_factor,
   repetitions_count,
   last_reviewed_at,
+  last_reviewed_num,
   created_at,
-  deck_id
+  deck_id,
+  tempo,
+  perfect_streak,
+  bad_streak
 ) VALUES (
   gen_random_uuid(),
   $1,
@@ -34,8 +38,12 @@ INSERT INTO cards(
   2.5,
   0,
   NULL,
+  0,
   NOW(),
-  $4
+  $4,
+  $5,
+  0,
+  0
 ) RETURNING 
   id,
   front_content,
@@ -46,7 +54,10 @@ INSERT INTO cards(
   repetitions_count,
   last_reviewed_at,
   created_at,
-  deck_id
+  deck_id,
+  tempo,
+  perfect_streak,
+  bad_streak
 `
 
 type CreateCardParams struct {
@@ -54,6 +65,7 @@ type CreateCardParams struct {
 	BackContent  string
 	Target       int32
 	DeckID       uuid.UUID
+	Tempo        int32
 }
 
 type CreateCardRow struct {
@@ -67,6 +79,9 @@ type CreateCardRow struct {
 	LastReviewedAt   sql.NullTime
 	CreatedAt        time.Time
 	DeckID           uuid.UUID
+	Tempo            int32
+	PerfectStreak    int32
+	BadStreak        int32
 }
 
 func (q *Queries) CreateCard(ctx context.Context, arg CreateCardParams) (CreateCardRow, error) {
@@ -75,6 +90,7 @@ func (q *Queries) CreateCard(ctx context.Context, arg CreateCardParams) (CreateC
 		arg.BackContent,
 		arg.Target,
 		arg.DeckID,
+		arg.Tempo,
 	)
 	var i CreateCardRow
 	err := row.Scan(
@@ -88,6 +104,9 @@ func (q *Queries) CreateCard(ctx context.Context, arg CreateCardParams) (CreateC
 		&i.LastReviewedAt,
 		&i.CreatedAt,
 		&i.DeckID,
+		&i.Tempo,
+		&i.PerfectStreak,
+		&i.BadStreak,
 	)
 	return i, err
 }

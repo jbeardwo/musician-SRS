@@ -10,13 +10,17 @@ import (
 )
 
 type Deck struct {
-	ID           uuid.UUID `json:"id"`
-	Title        string    `json:"title"`
-	Description  string    `json:"description"`
-	CreatedAt    time.Time `json:"created_at"`
-	UserID       uuid.UUID `json:"user_id"`
-	TotalReviews int32     `json:"total_reviews"`
-	Cards        CardHeap
+	ID               uuid.UUID `json:"id"`
+	Title            string    `json:"title"`
+	Description      string    `json:"description"`
+	CreatedAt        time.Time `json:"created_at"`
+	UserID           uuid.UUID `json:"user_id"`
+	TotalReviews     int32     `json:"total_reviews"`
+	TempoIntervalUp  int32     `json:"tempo_interval_up"`
+	TempoIntervalDn  int32     `json:"tempo_interval_dn"`
+	PerfectThreshold int32     `json:"perfect_threshold"`
+	BadThreshold     int32     `json:"bad_threshold"`
+	Cards            CardHeap
 }
 
 func (d *Deck) ReviewDeck(n int) {
@@ -28,7 +32,26 @@ func (d *Deck) ReviewDeck(n int) {
 		}
 
 		curCard := heap.Pop(&d.Cards).(Card)
+
+		// enforce at least 3 cards before repetition
+		if d.TotalReviews-curCard.LastReviewedNum < 3 && d.TotalReviews >= 3 {
+			var heldCards []Card
+			heldCards = append(heldCards, curCard)
+			for {
+				curCard = heap.Pop(&d.Cards).(Card)
+				if d.TotalReviews-curCard.LastReviewedNum < 3 {
+					heldCards = append(heldCards, curCard)
+				} else {
+					break
+				}
+			}
+			for _, card := range heldCards {
+				heap.Push(&d.Cards, card)
+			}
+		}
+
 		fmt.Println(curCard.FrontContent)
+		fmt.Println(curCard.Tempo)
 		fmt.Println(curCard.BackContent)
 
 		fmt.Println("Input: 0. Again, 1. Hard, 2. Good, 3. Easy")
@@ -38,7 +61,6 @@ func (d *Deck) ReviewDeck(n int) {
 		if err != nil {
 			fmt.Println("Invalid input!")
 			heap.Push(&d.Cards, curCard)
-			n++
 			continue
 		}
 

@@ -8,8 +8,12 @@ INSERT INTO cards(
   ease_factor,
   repetitions_count,
   last_reviewed_at,
+  last_reviewed_num,
   created_at,
-  deck_id
+  deck_id,
+  tempo,
+  perfect_streak,
+  bad_streak
 ) VALUES (
   gen_random_uuid(),
   $1,
@@ -19,8 +23,12 @@ INSERT INTO cards(
   2.5,
   0,
   NULL,
+  0,
   NOW(),
-  $4
+  $4,
+  $5,
+  0,
+  0
 ) RETURNING 
   id,
   front_content,
@@ -31,7 +39,10 @@ INSERT INTO cards(
   repetitions_count,
   last_reviewed_at,
   created_at,
-  deck_id;
+  deck_id,
+  tempo,
+  perfect_streak,
+  bad_streak;
 
 
 -- name: DeleteCards :exec

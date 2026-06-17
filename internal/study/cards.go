@@ -20,6 +20,9 @@ type Card struct {
 	LastReviewedNum  int32        `json:"last_reviewed_num"`
 	CreatedAt        time.Time    `json:"created_at"`
 	DeckID           uuid.UUID    `json:"deck_id"`
+	Tempo            int32        `json:"tempo"`
+	PerfectStreak    int32        `json:"perfectstreak"`
+	BadStreak        int32        `json:"badstreak"`
 }
 
 func (c *Card) EvaluateCard(eval int) {
@@ -29,7 +32,7 @@ func (c *Card) EvaluateCard(eval int) {
 		c.RepetitionsCount = 0
 	} else if eval <= 3 {
 		c.Interval = int32(math.Round(float64(c.Interval) * c.EaseFactor))
-		c.EaseFactor = math.Max(c.EaseFactor*(0.7+(0.15*float64(eval))), 1.3)
+		c.EaseFactor = math.Max(c.EaseFactor*(0.7+(0.15*float64(eval))), .85)
 		c.RepetitionsCount++
 	}
 

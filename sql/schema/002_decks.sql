@@ -5,7 +5,11 @@ CREATE TABLE decks(
   description TEXT NOT NULL,
   created_at TIMESTAMP NOT NULL,
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  total_reviews INTEGER NOT NULL
+  total_reviews INTEGER NOT NULL,
+	tempo_interval_up  INTEGER NOT NULL,
+	tempo_interval_dn  INTEGER NOT NULL, 
+	perfect_threshold INTEGER NOT NULL,
+	bad_threshold     INTEGER NOT NULL
 );
 
 -- +goose Down

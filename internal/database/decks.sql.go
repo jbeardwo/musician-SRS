@@ -12,26 +12,61 @@ import (
 )
 
 const createDeck = `-- name: CreateDeck :one
-INSERT INTO decks (id, title, description, created_at, user_id, total_reviews)
-VALUES (
+INSERT INTO decks (
+ id,
+ title,
+ description,
+ created_at,
+ user_id,
+ total_reviews,
+ tempo_interval_up,
+ tempo_interval_dn,
+ perfect_threshold,
+ bad_threshold
+) VALUES (
   gen_random_uuid(),
 	$1,
 	$2,
   NOW(),
   $3,
-  0
-)
-RETURNING id, title, description, created_at, user_id, total_reviews
+  0,
+  $4,
+  $5,
+  $6,
+  $7
+) RETURNING 
+ id,
+ title,
+ description,
+ created_at,
+ user_id,
+ total_reviews,
+ tempo_interval_up,
+ tempo_interval_dn,
+ perfect_threshold,
+ bad_threshold
 `
 
 type CreateDeckParams struct {
-	Title       string
-	Description string
-	UserID      uuid.UUID
+	Title            string
+	Description      string
+	UserID           uuid.UUID
+	TempoIntervalUp  int32
+	TempoIntervalDn  int32
+	PerfectThreshold int32
+	BadThreshold     int32
 }
 
 func (q *Queries) CreateDeck(ctx context.Context, arg CreateDeckParams) (Deck, error) {
-	row := q.db.QueryRowContext(ctx, createDeck, arg.Title, arg.Description, arg.UserID)
+	row := q.db.QueryRowContext(ctx, createDeck,
+		arg.Title,
+		arg.Description,
+		arg.UserID,
+		arg.TempoIntervalUp,
+		arg.TempoIntervalDn,
+		arg.PerfectThreshold,
+		arg.BadThreshold,
+	)
 	var i Deck
 	err := row.Scan(
 		&i.ID,
@@ -40,6 +75,10 @@ func (q *Queries) CreateDeck(ctx context.Context, arg CreateDeckParams) (Deck, e
 		&i.CreatedAt,
 		&i.UserID,
 		&i.TotalReviews,
+		&i.TempoIntervalUp,
+		&i.TempoIntervalDn,
+		&i.PerfectThreshold,
+		&i.BadThreshold,
 	)
 	return i, err
 }
@@ -54,7 +93,7 @@ func (q *Queries) DeleteDecks(ctx context.Context) error {
 }
 
 const getDecksByUser = `-- name: GetDecksByUser :many
-SELECT id, title, description, created_at, user_id, total_reviews FROM decks
+SELECT id, title, description, created_at, user_id, total_reviews, tempo_interval_up, tempo_interval_dn, perfect_threshold, bad_threshold FROM decks
 WHERE user_id = $1
 `
 
@@ -74,6 +113,10 @@ func (q *Queries) GetDecksByUser(ctx context.Context, userID uuid.UUID) ([]Deck,
 			&i.CreatedAt,
 			&i.UserID,
 			&i.TotalReviews,
+			&i.TempoIntervalUp,
+			&i.TempoIntervalDn,
+			&i.PerfectThreshold,
+			&i.BadThreshold,
 		); err != nil {
 			return nil, err
 		}
