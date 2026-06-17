@@ -64,12 +64,18 @@ func (d *Deck) ReviewDeck(n int) {
 			continue
 		}
 
-		log.Println(d.TotalReviews, curCard.Target, curCard.Interval)
+		log.Println(d.TotalReviews, curCard.Target, curCard.Interval, curCard.Tempo)
 		curCard.EvaluateCard(evaluation)
 		d.TotalReviews += 1
 		curCard.LastReviewedNum = d.TotalReviews
 		curCard.Target = d.TotalReviews + curCard.Interval
-		log.Println(d.TotalReviews, curCard.Target, curCard.Interval)
+		if curCard.BadStreak == d.BadThreshold {
+			curCard.Tempo -= d.TempoIntervalDn
+		}
+		if curCard.PerfectStreak == d.PerfectThreshold {
+			curCard.Tempo += d.TempoIntervalUp
+		}
+		log.Println(d.TotalReviews, curCard.Target, curCard.Interval, curCard.Tempo)
 
 		heap.Push(&d.Cards, curCard)
 	}
