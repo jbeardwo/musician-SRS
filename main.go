@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -16,7 +17,8 @@ import (
 )
 
 type apiConfig struct {
-	db *database.Queries
+	db  *database.Queries
+	ctx context.Context
 }
 
 func main() {
@@ -117,13 +119,16 @@ func main() {
 	}
 
 	apiCfg := apiConfig{
-		db: dbQueries,
+		db:  dbQueries,
+		ctx: ctx,
 	}
-	deck.ReviewDeck(4)
+	// deck.ReviewDeck(4)
 	serveMux := http.NewServeMux()
 	serveMux.HandleFunc("GET /api/healthz", readyHandler)
 	serveMux.HandleFunc("POST /api/login", apiCfg.loginHandler)
 	serveMux.HandleFunc("GET /api/decks", apiCfg.getDecksHandler)
+	serveMux.HandleFunc("GET /api/cards", apiCfg.getCardsHandler)
+	serveMux.HandleFunc("POST /api/decks", apiCfg.newDeckHandler)
 
 	server := http.Server{
 		Handler: serveMux,
@@ -151,13 +156,13 @@ func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
 	params := parameters{}
 	err := decoder.Decode(&params)
 	if err != nil {
-		respondWithError(w, 400, "Error decoding body")
+		respondWithError(w, http.StatusBadRequest, "Error decoding body")
 		return
 	}
 
 	dbUser, err := cfg.db.GetUserByEmail(r.Context(), params.Email)
 	if err != nil {
-		respondWithError(w, 401, "Incorrect email or password")
+		respondWithError(w, http.StatusUnauthorized, "Incorrect email or password")
 		return
 	}
 
@@ -174,7 +179,7 @@ func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
 		UpdatedAt: dbUser.UpdatedAt,
 		Email:     dbUser.Email,
 	}
-	respondWithJSON(w, 200, response)
+	respondWithJSON(w, http.StatusOK, response)
 }
 
 func (cfg *apiConfig) getDecksHandler(w http.ResponseWriter, r *http.Request) {
@@ -183,7 +188,7 @@ func (cfg *apiConfig) getDecksHandler(w http.ResponseWriter, r *http.Request) {
 	var dbDecks []database.Deck
 	userID, err := uuid.Parse(userIDstr)
 	if err != nil || userID == uuid.Nil {
-		respondWithError(w, 400, "Invalid user ID")
+		respondWithError(w, http.StatusBadRequest, "Invalid user ID")
 		return
 	}
 	dbDecks, err = cfg.db.GetDecksByUser(r.Context(), userID)
@@ -202,7 +207,48 @@ func (cfg *apiConfig) getDecksHandler(w http.ResponseWriter, r *http.Request) {
 			UserID:      dbDeck.UserID,
 		})
 	}
-	respondWithJSON(w, 200, decks)
+	respondWithJSON(w, http.StatusOK, decks)
+}
+
+func (cfg *apiConfig) getCardsHandler(w http.ResponseWriter, r *http.Request) {
+	deckIDstr := r.URL.Query().Get("deck_id")
+
+	var dbCards []database.Card
+	deckID, err := uuid.Parse(deckIDstr)
+	if err != nil || deckID == uuid.Nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid user ID")
+		return
+	}
+	dbCards, err = cfg.db.GetCardsByDeck(r.Context(), deckID)
+	if err != nil {
+		respondWithError(w, 500, "Error getting decks")
+		return
+	}
+
+	cards := []study.Card{}
+	for _, dbCard := range dbCards {
+		cards = append(cards, study.Card{
+			ID:               dbCard.ID,
+			FrontContent:     dbCard.FrontContent,
+			BackContent:      dbCard.BackContent,
+			Interval:         dbCard.Interval,
+			Target:           dbCard.Target,
+			EaseFactor:       dbCard.EaseFactor,
+			RepetitionsCount: dbCard.RepetitionsCount,
+			LastReviewedAt:   dbCard.LastReviewedAt,
+			LastReviewedNum:  dbCard.LastReviewedNum,
+			CreatedAt:        dbCard.CreatedAt,
+			DeckID:           dbCard.DeckID,
+			Tempo:            dbCard.Tempo,
+			PerfectStreak:    dbCard.PerfectStreak,
+			BadStreak:        dbCard.BadStreak,
+		})
+	}
+
+	for _, c := range cards {
+		fmt.Println("card: ", c.FrontContent)
+	}
+	respondWithJSON(w, http.StatusCreated, cards)
 }
 
 func respondWithError(w http.ResponseWriter, code int, msg string) {
@@ -223,4 +269,54 @@ func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	_, _ = w.Write(dat)
+}
+
+func (cfg *apiConfig) newDeckHandler(w http.ResponseWriter, r *http.Request) {
+	type parameters struct {
+		Title            string    `json:"title"`
+		Description      string    `json:"description"`
+		UserID           uuid.UUID `json:"user_id"`
+		TempoIntervalUp  int32     `json:"tempo_interval_up"`
+		TempoIntervalDn  int32     `json:"tempo_interval_dn"`
+		PerfectThreshold int32     `json:"perfect_threshold"`
+		BadThreshold     int32     `json:"bad_threshold"`
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	params := parameters{}
+	err := decoder.Decode(&params)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid JSON body")
+		return
+	}
+
+	deckParams := database.CreateDeckParams{
+		Title:            params.Title,
+		Description:      params.Description,
+		UserID:           params.UserID,
+		TempoIntervalUp:  params.TempoIntervalUp,
+		TempoIntervalDn:  params.TempoIntervalDn,
+		PerfectThreshold: params.PerfectThreshold,
+		BadThreshold:     params.BadThreshold,
+	}
+
+	dbDeck, err := cfg.db.CreateDeck(cfg.ctx, deckParams)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	deck := study.Deck{
+		ID:               dbDeck.ID,
+		Title:            dbDeck.Title,
+		Description:      dbDeck.Description,
+		CreatedAt:        dbDeck.CreatedAt,
+		UserID:           dbDeck.UserID,
+		TotalReviews:     dbDeck.TotalReviews,
+		TempoIntervalUp:  dbDeck.TempoIntervalUp,
+		TempoIntervalDn:  dbDeck.TempoIntervalDn,
+		PerfectThreshold: dbDeck.PerfectThreshold,
+		BadThreshold:     dbDeck.BadThreshold,
+	}
+
+	respondWithJSON(w, http.StatusCreated, deck)
 }

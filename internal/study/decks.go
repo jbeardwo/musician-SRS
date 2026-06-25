@@ -24,8 +24,7 @@ type Deck struct {
 }
 
 func (d *Deck) ReviewDeck(n int) {
-	for i := 0; i < n; {
-
+	for range n {
 		if len(d.Cards) == 0 {
 			fmt.Println("No Cards in Deck!")
 			break
@@ -71,9 +70,11 @@ func (d *Deck) ReviewDeck(n int) {
 		curCard.Target = d.TotalReviews + curCard.Interval
 		if curCard.BadStreak == d.BadThreshold {
 			curCard.Tempo -= d.TempoIntervalDn
+			curCard.BadStreak = 0
 		}
 		if curCard.PerfectStreak == d.PerfectThreshold {
 			curCard.Tempo += d.TempoIntervalUp
+			curCard.PerfectStreak = 0
 		}
 		log.Println(d.TotalReviews, curCard.Target, curCard.Interval, curCard.Tempo)
 

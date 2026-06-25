@@ -47,3 +47,7 @@ INSERT INTO cards(
 
 -- name: DeleteCards :exec
   DELETE FROM cards;
+
+-- name: GetCardsByDeck :many
+SELECT * FROM cards
+WHERE deck_id = $1;

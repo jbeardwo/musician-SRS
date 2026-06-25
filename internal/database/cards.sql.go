@@ -119,3 +119,46 @@ func (q *Queries) DeleteCards(ctx context.Context) error {
 	_, err := q.db.ExecContext(ctx, deleteCards)
 	return err
 }
+
+const getCardsByDeck = `-- name: GetCardsByDeck :many
+SELECT id, front_content, back_content, interval, target, ease_factor, repetitions_count, last_reviewed_at, last_reviewed_num, created_at, deck_id, tempo, perfect_streak, bad_streak FROM cards
+WHERE deck_id = $1
+`
+
+func (q *Queries) GetCardsByDeck(ctx context.Context, deckID uuid.UUID) ([]Card, error) {
+	rows, err := q.db.QueryContext(ctx, getCardsByDeck, deckID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Card
+	for rows.Next() {
+		var i Card
+		if err := rows.Scan(
+			&i.ID,
+			&i.FrontContent,
+			&i.BackContent,
+			&i.Interval,
+			&i.Target,
+			&i.EaseFactor,
+			&i.RepetitionsCount,
+			&i.LastReviewedAt,
+			&i.LastReviewedNum,
+			&i.CreatedAt,
+			&i.DeckID,
+			&i.Tempo,
+			&i.PerfectStreak,
+			&i.BadStreak,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
