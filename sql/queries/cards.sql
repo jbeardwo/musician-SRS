@@ -38,6 +38,7 @@ INSERT INTO cards(
   ease_factor,
   repetitions_count,
   last_reviewed_at,
+  last_reviewed_num,
   created_at,
   deck_id,
   tempo,

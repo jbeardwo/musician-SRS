@@ -5,7 +5,6 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -129,6 +128,8 @@ func main() {
 	serveMux.HandleFunc("GET /api/decks", apiCfg.getDecksHandler)
 	serveMux.HandleFunc("GET /api/cards", apiCfg.getCardsHandler)
 	serveMux.HandleFunc("POST /api/decks", apiCfg.newDeckHandler)
+	serveMux.HandleFunc("POST /api/cards", apiCfg.newCardHandler)
+	serveMux.HandleFunc("DELETE /api/decks/{deckID}", apiCfg.deleteDeckHandler)
 
 	server := http.Server{
 		Handler: serveMux,
@@ -245,10 +246,7 @@ func (cfg *apiConfig) getCardsHandler(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	for _, c := range cards {
-		fmt.Println("card: ", c.FrontContent)
-	}
-	respondWithJSON(w, http.StatusCreated, cards)
+	respondWithJSON(w, http.StatusOK, cards)
 }
 
 func respondWithError(w http.ResponseWriter, code int, msg string) {
@@ -269,6 +267,29 @@ func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	_, _ = w.Write(dat)
+}
+
+func (cfg *apiConfig) deleteDeckHandler(w http.ResponseWriter, r *http.Request) {
+	deckIDstr := r.PathValue("deckID")
+	deckID, err := uuid.Parse(deckIDstr)
+	if err != nil {
+		respondWithError(w, 400, "Invalid deck ID")
+		return
+	}
+
+	_, err = cfg.db.GetDeckById(r.Context(), deckID)
+	if err != nil {
+		respondWithError(w, 404, "Deck not found")
+		return
+	}
+
+	err = cfg.db.DeleteDeck(r.Context(), deckID)
+	if err != nil {
+		respondWithError(w, 500, "Something went wrong")
+		return
+	}
+
+	w.WriteHeader(204)
 }
 
 func (cfg *apiConfig) newDeckHandler(w http.ResponseWriter, r *http.Request) {
@@ -319,4 +340,54 @@ func (cfg *apiConfig) newDeckHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondWithJSON(w, http.StatusCreated, deck)
+}
+
+func (cfg *apiConfig) newCardHandler(w http.ResponseWriter, r *http.Request) {
+	type parameters struct {
+		FrontContent string    `json:"front_content"`
+		BackContent  string    `json:"back_content"`
+		Target       int32     `json:"target"`
+		DeckID       uuid.UUID `json:"deck_id"`
+		Tempo        int32     `json:"tempo"`
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	params := parameters{}
+	err := decoder.Decode(&params)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid JSON body")
+		return
+	}
+
+	cardParams := database.CreateCardParams{
+		FrontContent: params.FrontContent,
+		BackContent:  params.BackContent,
+		Target:       params.Target,
+		DeckID:       params.DeckID,
+		Tempo:        params.Tempo,
+	}
+
+	dbCard, err := cfg.db.CreateCard(cfg.ctx, cardParams)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	card := study.Card{
+		ID:               dbCard.ID,
+		FrontContent:     dbCard.FrontContent,
+		BackContent:      dbCard.BackContent,
+		Interval:         dbCard.Interval,
+		Target:           dbCard.Target,
+		EaseFactor:       dbCard.EaseFactor,
+		RepetitionsCount: dbCard.RepetitionsCount,
+		LastReviewedAt:   dbCard.LastReviewedAt,
+		LastReviewedNum:  dbCard.LastReviewedNum,
+		CreatedAt:        dbCard.CreatedAt,
+		DeckID:           dbCard.DeckID,
+		Tempo:            dbCard.Tempo,
+		PerfectStreak:    dbCard.PerfectStreak,
+		BadStreak:        dbCard.BadStreak,
+	}
+
+	respondWithJSON(w, http.StatusCreated, card)
 }

@@ -83,6 +83,16 @@ func (q *Queries) CreateDeck(ctx context.Context, arg CreateDeckParams) (Deck, e
 	return i, err
 }
 
+const deleteDeck = `-- name: DeleteDeck :exec
+  DELETE FROM decks
+  WHERE id = $1
+`
+
+func (q *Queries) DeleteDeck(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, deleteDeck, id)
+	return err
+}
+
 const deleteDecks = `-- name: DeleteDecks :exec
   DELETE FROM decks
 `
@@ -92,9 +102,33 @@ func (q *Queries) DeleteDecks(ctx context.Context) error {
 	return err
 }
 
+const getDeckById = `-- name: GetDeckById :one
+  SELECT id, title, description, created_at, user_id, total_reviews, tempo_interval_up, tempo_interval_dn, perfect_threshold, bad_threshold FROM decks
+  WHERE id = $1
+`
+
+func (q *Queries) GetDeckById(ctx context.Context, id uuid.UUID) (Deck, error) {
+	row := q.db.QueryRowContext(ctx, getDeckById, id)
+	var i Deck
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Description,
+		&i.CreatedAt,
+		&i.UserID,
+		&i.TotalReviews,
+		&i.TempoIntervalUp,
+		&i.TempoIntervalDn,
+		&i.PerfectThreshold,
+		&i.BadThreshold,
+	)
+	return i, err
+}
+
 const getDecksByUser = `-- name: GetDecksByUser :many
-SELECT id, title, description, created_at, user_id, total_reviews, tempo_interval_up, tempo_interval_dn, perfect_threshold, bad_threshold FROM decks
-WHERE user_id = $1
+  SELECT id, title, description, created_at, user_id, total_reviews, tempo_interval_up, tempo_interval_dn, perfect_threshold, bad_threshold FROM decks
+  WHERE user_id = $1
+  ORDER BY created_at ASC
 `
 
 func (q *Queries) GetDecksByUser(ctx context.Context, userID uuid.UUID) ([]Deck, error) {

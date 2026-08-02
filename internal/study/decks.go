@@ -25,8 +25,8 @@ type Deck struct {
 
 func (d *Deck) ReviewDeck(n int) {
 	for range n {
-		if len(d.Cards) == 0 {
-			fmt.Println("No Cards in Deck!")
+		if len(d.Cards) < 4 {
+			fmt.Println("4 cards minimum required to study")
 			break
 		}
 
@@ -56,11 +56,16 @@ func (d *Deck) ReviewDeck(n int) {
 		fmt.Println("Input: 0. Again, 1. Hard, 2. Good, 3. Easy")
 
 		var evaluation int
-		_, err := fmt.Scan(&evaluation)
-		if err != nil {
-			fmt.Println("Invalid input!")
-			heap.Push(&d.Cards, curCard)
-			continue
+
+		for {
+			_, err := fmt.Scan(&evaluation)
+			if err != nil {
+				fmt.Println("Not an integer!")
+			}
+			if evaluation >= 0 && evaluation <= 3 {
+				break
+			}
+			fmt.Println("Invalid input: evaluation must be an integer between 0 and 3")
 		}
 
 		log.Println(d.TotalReviews, curCard.Target, curCard.Interval, curCard.Tempo)

@@ -34,9 +34,18 @@ INSERT INTO decks (
  perfect_threshold,
  bad_threshold;
 
+-- name: GetDeckById :one
+  SELECT * FROM decks
+  WHERE id = $1;
+
 -- name: DeleteDecks :exec
   DELETE FROM decks;
 
+-- name: DeleteDeck :exec
+  DELETE FROM decks
+  WHERE id = $1;
+
 -- name: GetDecksByUser :many
-SELECT * FROM decks
-WHERE user_id = $1;
+  SELECT * FROM decks
+  WHERE user_id = $1
+  ORDER BY created_at ASC;
