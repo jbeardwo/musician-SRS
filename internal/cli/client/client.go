@@ -75,7 +75,7 @@ func main() {
 			clientCfg.clientNewCard(clientCfg.decks[num])
 		case "delete":
 			if len(command) != 2 {
-				fmt.Println("invalid usage: study [deck number]")
+				fmt.Println("invalid usage: delete [deck number]")
 				break
 			}
 			num, err := strconv.Atoi(command[1])
@@ -85,6 +85,28 @@ func main() {
 			}
 			clientCfg.clientDeleteDeck(clientCfg.decks[num])
 		case "remove":
+			if len(command) != 2 {
+				fmt.Println("invalid usage: remove [deck number]")
+				break
+			}
+			deckNum, err := strconv.Atoi(command[1])
+			if err != nil {
+				fmt.Printf("invalid deck")
+				break
+			}
+			clientCfg.listCards(&clientCfg.decks[deckNum])
+			fmt.Println("choose a card to remove")
+			command := GetInput()
+			if len(command) != 1 {
+				fmt.Println("invalid usage: remove [deck number]")
+				break
+			}
+			cardNum, err := strconv.Atoi(command[0])
+			if err != nil {
+				fmt.Printf("invalid card")
+				break
+			}
+			clientCfg.clientDeleteCard(clientCfg.decks[deckNum].Cards[cardNum])
 		default:
 			fmt.Println("invalid command")
 		}
@@ -113,6 +135,31 @@ func (cfg *clientConfig) clientDeleteDeck(d study.Deck) {
 	}
 
 	cfg.clientGetDecks()
+}
+
+func (cfg *clientConfig) clientDeleteCard(c study.Card) {
+	
+	fullURL := fmt.Sprintf("%s/api/cards/%s", cfg.baseURL, c.ID)
+
+	req, err := http.NewRequest(http.MethodDelete, fullURL, nil)
+	if err != nil {
+		fmt.Printf("Error creating request: %v\n", err)
+		return
+	}
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Printf("Error deleting card: %v\n", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		fmt.Printf("Failed to delete card: status %d\n", resp.StatusCode)
+		return
+	}
+
 }
 
 func (cfg *clientConfig) clientStudy(num int) {

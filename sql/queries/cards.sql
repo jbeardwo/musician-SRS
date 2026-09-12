@@ -45,9 +45,16 @@ INSERT INTO cards(
   perfect_streak,
   bad_streak;
 
+-- name: GetCardById :one
+SELECT * FROM cards
+WHERE id = $1;
 
 -- name: DeleteCards :exec
-  DELETE FROM cards;
+DELETE FROM cards;
+
+-- name: DeleteCard :exec
+DELETE FROM cards
+WHERE id = $1;
 
 -- name: GetCardsByDeck :many
 SELECT * FROM cards

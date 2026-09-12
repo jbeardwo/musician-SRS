@@ -130,6 +130,7 @@ func main() {
 	serveMux.HandleFunc("POST /api/decks", apiCfg.newDeckHandler)
 	serveMux.HandleFunc("POST /api/cards", apiCfg.newCardHandler)
 	serveMux.HandleFunc("DELETE /api/decks/{deckID}", apiCfg.deleteDeckHandler)
+	serveMux.HandleFunc("DELETE /api/cards/{cardID}", apiCfg.deleteCardHandler)
 
 	server := http.Server{
 		Handler: serveMux,
@@ -211,6 +212,29 @@ func (cfg *apiConfig) getDecksHandler(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, decks)
 }
 
+func (cfg *apiConfig) deleteCardHandler(w http.ResponseWriter, r *http.Request) {
+	cardIDstr := r.PathValue("cardID")
+	cardID, err := uuid.Parse(cardIDstr)
+	if err != nil {
+		respondWithError(w, 400, "Invalid card ID")
+		return
+	}
+
+	_, err = cfg.db.GetCardById(r.Context(), cardID)
+	if err != nil {
+		respondWithError(w, 404, "Card not found")
+		return
+	}
+
+	err = cfg.db.DeleteCard(r.Context(), cardID)
+	if err != nil {
+		respondWithError(w, 500, "Something went wrong")
+		return
+	}
+
+	w.WriteHeader(204)
+}
+
 func (cfg *apiConfig) getCardsHandler(w http.ResponseWriter, r *http.Request) {
 	deckIDstr := r.URL.Query().Get("deck_id")
 
@@ -285,7 +309,7 @@ func (cfg *apiConfig) deleteDeckHandler(w http.ResponseWriter, r *http.Request) 
 
 	err = cfg.db.DeleteDeck(r.Context(), deckID)
 	if err != nil {
-		respondWithError(w, 500, "Something went wrong")
+		respondWithError(w, 500, "Something went wong")
 		return
 	}
 
