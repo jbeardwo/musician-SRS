@@ -164,3 +164,54 @@ func (q *Queries) GetDecksByUser(ctx context.Context, userID uuid.UUID) ([]Deck,
 	}
 	return items, nil
 }
+
+const updateDeck = `-- name: UpdateDeck :one
+UPDATE decks
+SET title  = $1,
+    description  = $2,
+    total_reviews  = $3,
+    tempo_interval_up  = $4,
+    tempo_interval_dn  = $5,
+    perfect_threshold  = $6,
+    bad_threshold = $7
+WHERE id = $8
+RETURNING id, title, description, created_at, user_id, total_reviews, tempo_interval_up, tempo_interval_dn, perfect_threshold, bad_threshold
+`
+
+type UpdateDeckParams struct {
+	Title            string
+	Description      string
+	TotalReviews     int32
+	TempoIntervalUp  int32
+	TempoIntervalDn  int32
+	PerfectThreshold int32
+	BadThreshold     int32
+	ID               uuid.UUID
+}
+
+func (q *Queries) UpdateDeck(ctx context.Context, arg UpdateDeckParams) (Deck, error) {
+	row := q.db.QueryRowContext(ctx, updateDeck,
+		arg.Title,
+		arg.Description,
+		arg.TotalReviews,
+		arg.TempoIntervalUp,
+		arg.TempoIntervalDn,
+		arg.PerfectThreshold,
+		arg.BadThreshold,
+		arg.ID,
+	)
+	var i Deck
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Description,
+		&i.CreatedAt,
+		&i.UserID,
+		&i.TotalReviews,
+		&i.TempoIntervalUp,
+		&i.TempoIntervalDn,
+		&i.PerfectThreshold,
+		&i.BadThreshold,
+	)
+	return i, err
+}

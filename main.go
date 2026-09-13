@@ -131,6 +131,7 @@ func main() {
 	serveMux.HandleFunc("POST /api/cards", apiCfg.newCardHandler)
 	serveMux.HandleFunc("DELETE /api/decks/{deckID}", apiCfg.deleteDeckHandler)
 	serveMux.HandleFunc("DELETE /api/cards/{cardID}", apiCfg.deleteCardHandler)
+	serveMux.HandleFunc("PUT /api/decks", apiCfg.updateDeckHandler)
 
 	server := http.Server{
 		Handler: serveMux,
@@ -364,6 +365,58 @@ func (cfg *apiConfig) newDeckHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondWithJSON(w, http.StatusCreated, deck)
+}
+
+func (cfg *apiConfig) updateDeckHandler(w http.ResponseWriter, r *http.Request) {
+	type parameters struct {
+		Title            string    `json:"title"`
+		Description      string    `json:"description"`
+		TotalReviews     int32     `json:"total_reviews"`
+		TempoIntervalUp  int32     `json:"tempo_interval_up"`
+		TempoIntervalDn  int32     `json:"tempo_interval_dn"`
+		PerfectThreshold int32     `json:"perfect_threshold"`
+		BadThreshold     int32     `json:"bad_threshold"`
+		ID               uuid.UUID `json:"id"`
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	params := parameters{}
+	err := decoder.Decode(&params)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid JSON body")
+		return
+	}
+
+	deckParams := database.UpdateDeckParams{
+		Title:            params.Title,
+		Description:      params.Description,
+		TotalReviews:     params.TotalReviews,
+		TempoIntervalUp:  params.TempoIntervalUp,
+		TempoIntervalDn:  params.TempoIntervalDn,
+		PerfectThreshold: params.PerfectThreshold,
+		BadThreshold:     params.BadThreshold,
+		ID:               params.ID,
+	}
+
+	dbDeck, err := cfg.db.UpdateDeck(cfg.ctx, deckParams)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	deck := study.Deck{
+		ID:               dbDeck.ID,
+		Title:            dbDeck.Title,
+		Description:      dbDeck.Description,
+		CreatedAt:        dbDeck.CreatedAt,
+		UserID:           dbDeck.UserID,
+		TotalReviews:     dbDeck.TotalReviews,
+		TempoIntervalUp:  dbDeck.TempoIntervalUp,
+		TempoIntervalDn:  dbDeck.TempoIntervalDn,
+		PerfectThreshold: dbDeck.PerfectThreshold,
+		BadThreshold:     dbDeck.BadThreshold,
+	}
+
+	respondWithJSON(w, http.StatusOK, deck)
 }
 
 func (cfg *apiConfig) newCardHandler(w http.ResponseWriter, r *http.Request) {

@@ -49,3 +49,15 @@ INSERT INTO decks (
   SELECT * FROM decks
   WHERE user_id = $1
   ORDER BY created_at ASC;
+
+-- name: UpdateDeck :one
+UPDATE decks
+SET title  = $1,
+    description  = $2,
+    total_reviews  = $3,
+    tempo_interval_up  = $4,
+    tempo_interval_dn  = $5,
+    perfect_threshold  = $6,
+    bad_threshold = $7
+WHERE id = $8
+RETURNING *;

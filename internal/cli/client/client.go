@@ -107,6 +107,17 @@ func main() {
 				break
 			}
 			clientCfg.clientDeleteCard(clientCfg.decks[deckNum].Cards[cardNum])
+		case "update":
+			if len(command) != 2 {
+				fmt.Println("invalid usage: update [deck number]")
+				break
+			}
+			num, err := strconv.Atoi(command[1])
+			if err != nil {
+				fmt.Printf("invalid deck")
+				break
+			}
+			clientCfg.clientUpdateDeck(clientCfg.decks[num])
 		default:
 			fmt.Println("invalid command")
 		}
@@ -138,7 +149,7 @@ func (cfg *clientConfig) clientDeleteDeck(d study.Deck) {
 }
 
 func (cfg *clientConfig) clientDeleteCard(c study.Card) {
-	
+
 	fullURL := fmt.Sprintf("%s/api/cards/%s", cfg.baseURL, c.ID)
 
 	req, err := http.NewRequest(http.MethodDelete, fullURL, nil)
@@ -410,6 +421,106 @@ func requestNewDeck(baseURL string, params newDeckParams) (study.Deck, error) {
 	return deck, nil
 }
 
+type updateDeckParams struct {
+	Title            string
+	Description      string
+	TotalReviews     int32
+	TempoIntervalUp  int32
+	TempoIntervalDn  int32
+	PerfectThreshold int32
+	BadThreshold     int32
+	ID               uuid.UUID
+}
+
+func (cfg *clientConfig) clientUpdateDeck(d study.Deck) {
+
+	var params updateDeckParams
+
+	fmt.Println("Title:")
+	params.Title = strings.Join(GetInput(), " ")
+
+	fmt.Println("Description:")
+	params.Description = strings.Join(GetInput(), " ")
+
+	fmt.Println("TempoIntervalUp:")
+	input, err := strconv.Atoi(GetInput()[0])
+	if err != nil {
+		fmt.Println("Invalid Input")
+		return
+	}
+	params.TempoIntervalUp = int32(input)
+
+	fmt.Println("TempoIntervalDn:")
+	input, err = strconv.Atoi(GetInput()[0])
+	if err != nil {
+		fmt.Println("Invalid Input")
+		return
+	}
+	params.TempoIntervalDn = int32(input)
+
+	fmt.Println("PerfectThreshold:")
+	input, err = strconv.Atoi(GetInput()[0])
+	if err != nil {
+		fmt.Println("Invalid Input")
+		return
+	}
+	params.PerfectThreshold = int32(input)
+
+	fmt.Println("BadThreshold")
+	input, err = strconv.Atoi(GetInput()[0])
+	if err != nil {
+		fmt.Println("Invalid Input")
+		return
+	}
+	params.BadThreshold = int32(input)
+
+	params.ID = d.ID
+	params.TotalReviews = d.TotalReviews
+
+	_, err = requestUpdateDeck(cfg.baseURL, params)
+	if err != nil {
+		fmt.Printf("problem updating deck: %s\n", err)
+		return
+	}
+
+	cfg.clientGetDecks()
+
+}
+
+func requestUpdateDeck(baseURL string, params updateDeckParams) (study.Deck, error) {
+	payload, err := json.Marshal(params)
+	if err != nil {
+		return study.Deck{}, fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	fullURL := baseURL + "/api/decks"
+
+	req, err := http.NewRequest(http.MethodPut, fullURL, bytes.NewBuffer(payload))
+	if err != nil {
+		return study.Deck{}, fmt.Errorf("error creating request: %v\n", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return study.Deck{}, fmt.Errorf("Error updating deck: %v\n", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return study.Deck{}, fmt.Errorf("Error updating deck, status: %d\n", resp.StatusCode)
+	}
+
+	var updatedDeck study.Deck
+	err = json.NewDecoder(resp.Body).Decode(&updatedDeck)
+	if err != nil {
+		return study.Deck{}, fmt.Errorf("error decoding deck%v\n", err)
+	}
+
+	return updatedDeck, nil
+}
+
 type newCardParams struct {
 	FrontContent string    `json:"front_content"`
 	BackContent  string    `json:"back_content"`
@@ -488,5 +599,6 @@ func printHelp() {
 	fmt.Println("new: creates new deck")
 	fmt.Println("add [deck #]: creates a new card and adds it to the specified deck")
 	fmt.Println("delete [deck #]: deletes specified deck")
+	fmt.Println("update [deck #]: updates specified deck")
 	fmt.Println("remove [deck #]: removes single card from specified deck")
 }
