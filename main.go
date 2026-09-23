@@ -132,6 +132,7 @@ func main() {
 	serveMux.HandleFunc("DELETE /api/decks/{deckID}", apiCfg.deleteDeckHandler)
 	serveMux.HandleFunc("DELETE /api/cards/{cardID}", apiCfg.deleteCardHandler)
 	serveMux.HandleFunc("PUT /api/decks", apiCfg.updateDeckHandler)
+	serveMux.HandleFunc("PUT /api/cards", apiCfg.updateCardHandler)
 
 	server := http.Server{
 		Handler: serveMux,
@@ -417,6 +418,71 @@ func (cfg *apiConfig) updateDeckHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	respondWithJSON(w, http.StatusOK, deck)
+}
+
+func (cfg *apiConfig) updateCardHandler(w http.ResponseWriter, r *http.Request) {
+
+	type parameters struct {
+		FrontContent     string       `json:"front_content"`
+		BackContent      string       `json:"back_content"`
+		Interval         int32        `json:"interval"`
+		Target           int32        `json:"target"`
+		EaseFactor       float64      `json:"ease_factor"`
+		RepetitionsCount int32        `json:"repetitions_count"`
+		LastReviewedAt   sql.NullTime `json:"last_reviewed_at"`
+		LastReviewedNum  int32        `json:"last_reviewed_num"`
+		Tempo            int32        `json:"tempo"`
+		PerfectStreak    int32        `json:"perfect_streak"`
+		BadStreak        int32        `json:"bad_streak"`
+		ID               uuid.UUID    `json:"id"`
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	params := parameters{}
+	err := decoder.Decode(&params)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid JSON body")
+		return
+	}
+
+	cardParams := database.UpdateCardParams{
+		FrontContent:     params.FrontContent,
+		BackContent:      params.BackContent,
+		Interval:         params.Interval,
+		Target:           params.Target,
+		EaseFactor:       params.EaseFactor,
+		RepetitionsCount: params.RepetitionsCount,
+		LastReviewedAt:   params.LastReviewedAt,
+		LastReviewedNum:  params.LastReviewedNum,
+		Tempo:            params.Tempo,
+		PerfectStreak:    params.PerfectStreak,
+		BadStreak:        params.BadStreak,
+		ID:               params.ID,
+	}
+
+	dbCard, err := cfg.db.UpdateCard(cfg.ctx, cardParams)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	card := study.Card{
+		ID:               dbCard.ID,
+		FrontContent:     dbCard.FrontContent,
+		BackContent:      dbCard.BackContent,
+		Interval:         dbCard.Interval,
+		Target:           dbCard.Target,
+		EaseFactor:       dbCard.EaseFactor,
+		RepetitionsCount: dbCard.RepetitionsCount,
+		LastReviewedAt:   dbCard.LastReviewedAt,
+		LastReviewedNum:  dbCard.LastReviewedNum,
+		DeckID:           dbCard.DeckID,
+		CreatedAt:        dbCard.CreatedAt,
+		Tempo:            dbCard.Tempo,
+		PerfectStreak:    dbCard.PerfectStreak,
+		BadStreak:        dbCard.BadStreak,
+	}
+
+	respondWithJSON(w, http.StatusOK, card)
 }
 
 func (cfg *apiConfig) newCardHandler(w http.ResponseWriter, r *http.Request) {

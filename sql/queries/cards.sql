@@ -59,3 +59,19 @@ WHERE id = $1;
 -- name: GetCardsByDeck :many
 SELECT * FROM cards
 WHERE deck_id = $1;
+
+-- name: UpdateCard :one
+UPDATE cards
+SET  front_content = $1,
+  back_content = $2,
+  interval = $3,
+  target = $4,
+  ease_factor = $5,
+  repetitions_count = $6,
+  last_reviewed_at = $7,
+  last_reviewed_num = $8,
+  tempo = $9,
+  perfect_streak = $10,
+  bad_streak = $11
+WHERE id = $12
+RETURNING *;

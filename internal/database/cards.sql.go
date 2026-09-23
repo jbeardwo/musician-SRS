@@ -7,6 +7,7 @@ package database
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/google/uuid"
 )
@@ -182,4 +183,71 @@ func (q *Queries) GetCardsByDeck(ctx context.Context, deckID uuid.UUID) ([]Card,
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateCard = `-- name: UpdateCard :one
+UPDATE cards
+SET  front_content = $1,
+  back_content = $2,
+  interval = $3,
+  target = $4,
+  ease_factor = $5,
+  repetitions_count = $6,
+  last_reviewed_at = $7,
+  last_reviewed_num = $8,
+  tempo = $9,
+  perfect_streak = $10,
+  bad_streak = $11
+WHERE id = $12
+RETURNING id, front_content, back_content, interval, target, ease_factor, repetitions_count, last_reviewed_at, last_reviewed_num, created_at, deck_id, tempo, perfect_streak, bad_streak
+`
+
+type UpdateCardParams struct {
+	FrontContent     string
+	BackContent      string
+	Interval         int32
+	Target           int32
+	EaseFactor       float64
+	RepetitionsCount int32
+	LastReviewedAt   sql.NullTime
+	LastReviewedNum  int32
+	Tempo            int32
+	PerfectStreak    int32
+	BadStreak        int32
+	ID               uuid.UUID
+}
+
+func (q *Queries) UpdateCard(ctx context.Context, arg UpdateCardParams) (Card, error) {
+	row := q.db.QueryRowContext(ctx, updateCard,
+		arg.FrontContent,
+		arg.BackContent,
+		arg.Interval,
+		arg.Target,
+		arg.EaseFactor,
+		arg.RepetitionsCount,
+		arg.LastReviewedAt,
+		arg.LastReviewedNum,
+		arg.Tempo,
+		arg.PerfectStreak,
+		arg.BadStreak,
+		arg.ID,
+	)
+	var i Card
+	err := row.Scan(
+		&i.ID,
+		&i.FrontContent,
+		&i.BackContent,
+		&i.Interval,
+		&i.Target,
+		&i.EaseFactor,
+		&i.RepetitionsCount,
+		&i.LastReviewedAt,
+		&i.LastReviewedNum,
+		&i.CreatedAt,
+		&i.DeckID,
+		&i.Tempo,
+		&i.PerfectStreak,
+		&i.BadStreak,
+	)
+	return i, err
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -118,10 +119,112 @@ func main() {
 				break
 			}
 			clientCfg.clientUpdateDeck(clientCfg.decks[num])
+		case "modify":
+			if len(command) != 2 {
+				fmt.Println("invalid usage: modify [deck number]")
+				break
+			}
+			deckNum, err := strconv.Atoi(command[1])
+			if err != nil {
+				fmt.Printf("invalid deck")
+				break
+			}
+			clientCfg.listCards(&clientCfg.decks[deckNum])
+			fmt.Println("choose a card to modify")
+			command := GetInput()
+			if len(command) != 1 {
+				fmt.Println("invalid usage: modify [deck number]")
+				break
+			}
+			cardNum, err := strconv.Atoi(command[0])
+			if err != nil {
+				fmt.Printf("invalid card")
+				break
+			}
+			clientCfg.clientModifyCard(clientCfg.decks[deckNum].Cards[cardNum])
 		default:
 			fmt.Println("invalid command")
 		}
 	}
+}
+
+type updateCardParams struct {
+	FrontContent     string       `json:"front_content"`
+	BackContent      string       `json:"back_content"`
+	Interval         int32        `json:"interval"`
+	Target           int32        `json:"target"`
+	EaseFactor       float64      `json:"ease_factor"`
+	RepetitionsCount int32        `json:"repetitions_count"`
+	LastReviewedAt   sql.NullTime `json:"last_reviewed_at"`
+	LastReviewedNum  int32        `json:"last_reviewed_num"`
+	Tempo            int32        `json:"tempo"`
+	PerfectStreak    int32        `json:"perfect_streak"`
+	BadStreak        int32        `json:"bad_streak"`
+	ID               uuid.UUID    `json:"id"`
+}
+
+func (cfg *clientConfig) clientModifyCard(c study.Card) {
+
+	var params updateCardParams
+
+	fmt.Println("Front:")
+	params.FrontContent = strings.Join(GetInput(), " ")
+
+	fmt.Println("Back:")
+	params.BackContent = strings.Join(GetInput(), " ")
+
+	params.Interval = c.Interval
+	params.Target = c.Target
+	params.EaseFactor = c.EaseFactor
+	params.RepetitionsCount = c.RepetitionsCount
+	params.LastReviewedAt = c.LastReviewedAt
+	params.LastReviewedNum = c.LastReviewedNum
+	params.Tempo = c.Tempo
+	params.PerfectStreak = c.PerfectStreak
+	params.BadStreak = c.BadStreak
+	params.ID = c.ID
+
+	_, err := requestUpdateCard(cfg.baseURL, params)
+	if err != nil {
+		fmt.Printf("problem updating deck: %s\n", err)
+		return
+	}
+
+	cfg.clientGetDecks()
+}
+
+func requestUpdateCard(baseURL string, params updateCardParams) (study.Card, error) {
+	payload, err := json.Marshal(params)
+	if err != nil {
+		return study.Card{}, fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	fullURL := baseURL + "/api/cards"
+
+	req, err := http.NewRequest(http.MethodPut, fullURL, bytes.NewBuffer(payload))
+	if err != nil {
+		return study.Card{}, fmt.Errorf("error creating request: %v\n", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return study.Card{}, fmt.Errorf("Error updating deck: %v\n", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return study.Card{}, fmt.Errorf("Error updating deck, status: %d\n", resp.StatusCode)
+	}
+
+	var updatedCard study.Card
+	err = json.NewDecoder(resp.Body).Decode(&updatedCard)
+	if err != nil {
+		return study.Card{}, fmt.Errorf("error decoding deck%v\n", err)
+	}
+
+	return updatedCard, nil
 }
 
 func (cfg *clientConfig) clientDeleteDeck(d study.Deck) {
@@ -422,14 +525,14 @@ func requestNewDeck(baseURL string, params newDeckParams) (study.Deck, error) {
 }
 
 type updateDeckParams struct {
-	Title            string
-	Description      string
-	TotalReviews     int32
-	TempoIntervalUp  int32
-	TempoIntervalDn  int32
-	PerfectThreshold int32
-	BadThreshold     int32
-	ID               uuid.UUID
+	Title            string    `json:"title"`
+	Description      string    `json:"description"`
+	TotalReviews     int32     `json:"total_reviews"`
+	TempoIntervalUp  int32     `json:"tempo_interval_up"`
+	TempoIntervalDn  int32     `json:"tempo_interval_dn"`
+	PerfectThreshold int32     `json:"perfect_threshold"`
+	BadThreshold     int32     `json:"bad_threshold"`
+	ID               uuid.UUID `json:"id"`
 }
 
 func (cfg *clientConfig) clientUpdateDeck(d study.Deck) {
@@ -601,4 +704,5 @@ func printHelp() {
 	fmt.Println("delete [deck #]: deletes specified deck")
 	fmt.Println("update [deck #]: updates specified deck")
 	fmt.Println("remove [deck #]: removes single card from specified deck")
+	fmt.Println("modify [deck #]: modify a single card form specified deck")
 }
