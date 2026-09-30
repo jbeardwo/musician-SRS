@@ -3,9 +3,11 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"container/heap"
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -291,7 +293,7 @@ func (cfg *clientConfig) clientStudy(num int) {
 		fmt.Println("Invalid Input")
 		return
 	}
-	cfg.decks[num].ReviewDeck(n)
+	cfg.clientReviewDeck(&cfg.decks[num], n)
 }
 
 func GetInput() []string {
@@ -688,6 +690,113 @@ func requestNewCard(baseURL string, params newCardParams) (study.Card, error) {
 	}
 
 	return card, nil
+}
+
+func (cfg *clientConfig) clientReviewDeck(d *study.Deck, n int) {
+	for range n {
+		if len(d.Cards) < 4 {
+			fmt.Println("4 cards minimum required to study")
+			break
+		}
+
+		curCard := heap.Pop(&d.Cards).(study.Card)
+
+		// enforce at least 3 cards before repetition
+		if d.TotalReviews-curCard.LastReviewedNum < 3 && d.TotalReviews >= 3 {
+			var heldCards []study.Card
+			heldCards = append(heldCards, curCard)
+			for {
+				curCard = heap.Pop(&d.Cards).(study.Card)
+				if d.TotalReviews-curCard.LastReviewedNum < 3 {
+					heldCards = append(heldCards, curCard)
+				} else {
+					break
+				}
+			}
+			for _, card := range heldCards {
+				heap.Push(&d.Cards, card)
+			}
+		}
+
+		fmt.Println(curCard.FrontContent)
+		fmt.Println(curCard.Tempo)
+		fmt.Println(curCard.BackContent)
+
+		fmt.Println("Input: 0. Again, 1. Hard, 2. Good, 3. Easy")
+
+		var evaluation int
+
+		for {
+			_, err := fmt.Scan(&evaluation)
+			if err != nil {
+				fmt.Println("Not an integer!")
+			}
+			if evaluation >= 0 && evaluation <= 3 {
+				break
+			}
+			fmt.Println("Invalid input: evaluation must be an integer between 0 and 3")
+		}
+
+		log.Println(d.TotalReviews, curCard.Target, curCard.Interval, curCard.Tempo)
+		curCard.EvaluateCard(evaluation)
+		d.TotalReviews += 1
+		curCard.LastReviewedNum = d.TotalReviews
+		curCard.Target = d.TotalReviews + curCard.Interval
+		if curCard.BadStreak == d.BadThreshold {
+			curCard.Tempo -= d.TempoIntervalDn
+			curCard.BadStreak = 0
+		}
+		if curCard.PerfectStreak == d.PerfectThreshold {
+			curCard.Tempo += d.TempoIntervalUp
+			curCard.PerfectStreak = 0
+		}
+		log.Println(d.TotalReviews, curCard.Target, curCard.Interval, curCard.Tempo)
+		cfg.updateCard(curCard)
+		cfg.updateDeck(d)
+
+		heap.Push(&d.Cards, curCard)
+	}
+}
+
+func (cfg *clientConfig) updateDeck(d *study.Deck) {
+	params := updateDeckParams{
+		Title:            d.Title,
+		Description:      d.Description,
+		TotalReviews:     d.TotalReviews,
+		TempoIntervalUp:  d.TempoIntervalUp,
+		TempoIntervalDn:  d.TempoIntervalDn,
+		PerfectThreshold: d.PerfectThreshold,
+		BadThreshold:     d.BadThreshold,
+		ID:               d.ID,
+	}
+
+	_, err := requestUpdateDeck(cfg.baseURL, params)
+	if err != nil {
+		fmt.Printf("problem saving deck: %v\n", err)
+	}
+}
+
+func (cfg *clientConfig) updateCard(c study.Card) {
+	var params updateCardParams
+
+	params.FrontContent = c.FrontContent
+	params.BackContent = c.BackContent
+	params.Interval = c.Interval
+	params.Target = c.Target
+	params.EaseFactor = c.EaseFactor
+	params.RepetitionsCount = c.RepetitionsCount
+	params.LastReviewedAt = c.LastReviewedAt
+	params.LastReviewedNum = c.LastReviewedNum
+	params.Tempo = c.Tempo
+	params.PerfectStreak = c.PerfectStreak
+	params.BadStreak = c.BadStreak
+	params.ID = c.ID
+
+	_, err := requestUpdateCard(cfg.baseURL, params)
+	if err != nil {
+		fmt.Printf("problem saving card: %v\n", err)
+	}
+
 }
 
 func printHelp() {
