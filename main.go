@@ -196,11 +196,12 @@ func (cfg *apiConfig) getDecksHandler(w http.ResponseWriter, r *http.Request) {
 	decks := []study.Deck{}
 	for _, dbDeck := range dbDecks {
 		decks = append(decks, study.Deck{
-			ID:          dbDeck.ID,
-			Title:       dbDeck.Title,
-			Description: dbDeck.Description,
-			CreatedAt:   dbDeck.CreatedAt,
-			UserID:      dbDeck.UserID,
+			ID:           dbDeck.ID,
+			Title:        dbDeck.Title,
+			Description:  dbDeck.Description,
+			CreatedAt:    dbDeck.CreatedAt,
+			UserID:       dbDeck.UserID,
+			TotalReviews: dbDeck.TotalReviews,
 		})
 	}
 	respondWithJSON(w, http.StatusOK, decks)

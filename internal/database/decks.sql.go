@@ -7,7 +7,6 @@ package database
 
 import (
 	"context"
-	"time"
 
 	"github.com/google/uuid"
 )
@@ -42,18 +41,9 @@ type CreateDeckParams struct {
 	UserID      uuid.UUID
 }
 
-type CreateDeckRow struct {
-	ID           uuid.UUID
-	Title        string
-	Description  string
-	CreatedAt    time.Time
-	UserID       uuid.UUID
-	TotalReviews int32
-}
-
-func (q *Queries) CreateDeck(ctx context.Context, arg CreateDeckParams) (CreateDeckRow, error) {
+func (q *Queries) CreateDeck(ctx context.Context, arg CreateDeckParams) (Deck, error) {
 	row := q.db.QueryRowContext(ctx, createDeck, arg.Title, arg.Description, arg.UserID)
-	var i CreateDeckRow
+	var i Deck
 	err := row.Scan(
 		&i.ID,
 		&i.Title,
@@ -85,7 +75,7 @@ func (q *Queries) DeleteDecks(ctx context.Context) error {
 }
 
 const getDeckById = `-- name: GetDeckById :one
-  SELECT id, title, description, created_at, user_id, total_reviews, tempo_interval_dn, perfect_threshold, bad_threshold FROM decks
+  SELECT id, title, description, created_at, user_id, total_reviews FROM decks
   WHERE id = $1
 `
 
@@ -99,15 +89,12 @@ func (q *Queries) GetDeckById(ctx context.Context, id uuid.UUID) (Deck, error) {
 		&i.CreatedAt,
 		&i.UserID,
 		&i.TotalReviews,
-		&i.TempoIntervalDn,
-		&i.PerfectThreshold,
-		&i.BadThreshold,
 	)
 	return i, err
 }
 
 const getDecksByUser = `-- name: GetDecksByUser :many
-  SELECT id, title, description, created_at, user_id, total_reviews, tempo_interval_dn, perfect_threshold, bad_threshold FROM decks
+  SELECT id, title, description, created_at, user_id, total_reviews FROM decks
   WHERE user_id = $1
   ORDER BY created_at ASC
 `
@@ -128,9 +115,6 @@ func (q *Queries) GetDecksByUser(ctx context.Context, userID uuid.UUID) ([]Deck,
 			&i.CreatedAt,
 			&i.UserID,
 			&i.TotalReviews,
-			&i.TempoIntervalDn,
-			&i.PerfectThreshold,
-			&i.BadThreshold,
 		); err != nil {
 			return nil, err
 		}
@@ -151,7 +135,7 @@ SET title  = $1,
     description  = $2,
     total_reviews  = $3
 WHERE id = $4
-RETURNING id, title, description, created_at, user_id, total_reviews, tempo_interval_dn, perfect_threshold, bad_threshold
+RETURNING id, title, description, created_at, user_id, total_reviews
 `
 
 type UpdateDeckParams struct {
@@ -176,9 +160,6 @@ func (q *Queries) UpdateDeck(ctx context.Context, arg UpdateDeckParams) (Deck, e
 		&i.CreatedAt,
 		&i.UserID,
 		&i.TotalReviews,
-		&i.TempoIntervalDn,
-		&i.PerfectThreshold,
-		&i.BadThreshold,
 	)
 	return i, err
 }

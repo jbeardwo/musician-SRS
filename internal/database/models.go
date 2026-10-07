@@ -27,15 +27,12 @@ type Card struct {
 }
 
 type Deck struct {
-	ID               uuid.UUID
-	Title            string
-	Description      string
-	CreatedAt        time.Time
-	UserID           uuid.UUID
-	TotalReviews     int32
-	TempoIntervalDn  int32
-	PerfectThreshold int32
-	BadThreshold     int32
+	ID           uuid.UUID
+	Title        string
+	Description  string
+	CreatedAt    time.Time
+	UserID       uuid.UUID
+	TotalReviews int32
 }
 
 type User struct {
