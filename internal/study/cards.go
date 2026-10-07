@@ -23,14 +23,30 @@ type Card struct {
 	Tempo            int32        `json:"tempo"`
 }
 
-func (c *Card) EvaluateCard(eval int) {
-	if eval == 0 {
+type Rating int
+
+const (
+	Again Rating = iota
+	Hard
+	Good
+	Easy
+)
+
+func (c *Card) EvaluateCard(r Rating) {
+	switch r {
+	case Again:
 		c.Interval = 1
-		c.EaseFactor = math.Max(c.EaseFactor*.80, 1.3)
-		c.RepetitionsCount = 0
-	} else if eval <= 3 {
+		c.EaseFactor = math.Max(c.EaseFactor-.20, 1.3)
+	case Hard:
+		c.Interval = int32(math.Round(float64(c.Interval) * 1.2))
+		c.EaseFactor = math.Max(c.EaseFactor-.15, 1.3)
+		c.RepetitionsCount += 1
+	case Good:
 		c.Interval = int32(math.Round(float64(c.Interval) * c.EaseFactor))
-		c.EaseFactor = math.Max(c.EaseFactor*(0.7+(0.15*float64(eval))), .85)
+		c.RepetitionsCount += 1
+	case Easy:
+		c.Interval = int32(math.Round(float64(c.Interval) * c.EaseFactor * 1.3))
+		c.EaseFactor = c.EaseFactor + .15
 		c.RepetitionsCount += 1
 	}
 
