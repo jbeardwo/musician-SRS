@@ -109,7 +109,13 @@ func main() {
 				fmt.Printf("invalid card")
 				break
 			}
-			clientCfg.clientDeleteCard(clientCfg.decks[deckNum].Cards[cardNum])
+			if cardNum >= 0 && cardNum < len(clientCfg.decks[deckNum].Cards) {
+				clientCfg.clientDeleteCard(clientCfg.decks[deckNum].Cards[cardNum])
+			} else if cardNum >= len(clientCfg.decks[deckNum].Cards) && cardNum < len(clientCfg.decks[deckNum].Cards)+len(clientCfg.decks[deckNum].NewCards) {
+				clientCfg.clientDeleteCard(clientCfg.decks[deckNum].NewCards[cardNum-len(clientCfg.decks[deckNum].Cards)])
+			} else {
+				fmt.Println("invalid card")
+			}
 		case "update":
 			if len(command) != 2 {
 				fmt.Println("invalid usage: update [deck number]")
@@ -143,7 +149,13 @@ func main() {
 				fmt.Printf("invalid card")
 				break
 			}
-			clientCfg.clientModifyCard(clientCfg.decks[deckNum].Cards[cardNum])
+			if cardNum >= 0 && cardNum < len(clientCfg.decks[deckNum].Cards) {
+				clientCfg.clientModifyCard(clientCfg.decks[deckNum].Cards[cardNum])
+			} else if len(clientCfg.decks[deckNum].NewCards) > 0 && cardNum < len(clientCfg.decks[deckNum].Cards)+len(clientCfg.decks[deckNum].NewCards) {
+				clientCfg.clientModifyCard(clientCfg.decks[deckNum].NewCards[cardNum-len(clientCfg.decks[deckNum].Cards)])
+			} else {
+				fmt.Println("invalid card")
+			}
 		default:
 			fmt.Println("invalid command")
 		}
@@ -410,13 +422,26 @@ func (cfg *clientConfig) clientGetCards(d *study.Deck) {
 		fmt.Printf("Failed to get cards: status %d\n", resp.StatusCode)
 		return
 	}
-	var cards []study.Card
+	var cardsIn []study.Card
 
-	if err := json.NewDecoder(resp.Body).Decode(&cards); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&cardsIn); err != nil {
 		fmt.Printf("Error decoding cards: %v\n", err)
 		return
 	}
+
+	var cards []study.Card
+	var newCards []study.Card
+
+	for _, c := range cardsIn {
+		if c.LastReviewedAt.Valid {
+			cards = append(cards, c)
+		} else {
+			newCards = append(newCards, c)
+		}
+	}
 	d.Cards = cards
+	heap.Init(&d.Cards)
+	d.NewCards = newCards
 }
 
 func (cfg *clientConfig) listDecks() {
@@ -429,6 +454,9 @@ func (cfg *clientConfig) listCards(d *study.Deck) {
 	cfg.clientGetCards(d)
 	for i, card := range d.Cards {
 		fmt.Println(i, " ", card.FrontContent, card.BackContent)
+	}
+	for i, card := range d.NewCards {
+		fmt.Println(i+len(d.Cards), " ", card.FrontContent, card.BackContent)
 	}
 }
 
@@ -618,28 +646,10 @@ func requestNewCard(baseURL string, params newCardParams) (study.Card, error) {
 
 func (cfg *clientConfig) clientReviewDeck(d *study.Deck, n int) {
 	for range n {
-		if len(d.Cards) < 4 {
-			fmt.Println("4 cards minimum required to study")
+		curCard, err := d.GetNextCard()
+		if err != nil {
+			fmt.Printf("error getting card: %v\n", err)
 			break
-		}
-
-		curCard := heap.Pop(&d.Cards).(study.Card)
-
-		// enforce at least 3 cards before repetition
-		if d.TotalReviews-curCard.LastReviewedNum < 3 && d.TotalReviews >= 3 {
-			var heldCards []study.Card
-			heldCards = append(heldCards, curCard)
-			for {
-				curCard = heap.Pop(&d.Cards).(study.Card)
-				if d.TotalReviews-curCard.LastReviewedNum < 3 {
-					heldCards = append(heldCards, curCard)
-				} else {
-					break
-				}
-			}
-			for _, card := range heldCards {
-				heap.Push(&d.Cards, card)
-			}
 		}
 
 		fmt.Println(curCard.FrontContent)
@@ -662,7 +672,8 @@ func (cfg *clientConfig) clientReviewDeck(d *study.Deck, n int) {
 		}
 
 		log.Println(d.TotalReviews, curCard.Target, curCard.Interval, curCard.Tempo)
-		curCard.EvaluateCard(evaluation)
+		rating := study.Rating(evaluation)
+		curCard.EvaluateCard(rating)
 		d.TotalReviews += 1
 		curCard.LastReviewedNum = d.TotalReviews
 		curCard.Target = d.TotalReviews + curCard.Interval
