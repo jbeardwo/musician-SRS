@@ -11,9 +11,7 @@ CREATE TABLE cards(
   last_reviewed_num INTEGER NOT NULL,
   created_at TIMESTAMP NOT NULL,
   deck_id UUID NOT NULL REFERENCES decks(id) ON DELETE CASCADE,
-	tempo INTEGER NOT NULL,
-	perfect_streak INTEGER NOT NULL,
-	bad_streak INTEGER NOT NULL 
+	tempo INTEGER NOT NULL
 );
 
 -- +goose Down

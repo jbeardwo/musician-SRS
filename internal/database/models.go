@@ -24,8 +24,6 @@ type Card struct {
 	CreatedAt        time.Time
 	DeckID           uuid.UUID
 	Tempo            int32
-	PerfectStreak    int32
-	BadStreak        int32
 }
 
 type Deck struct {
@@ -35,7 +33,6 @@ type Deck struct {
 	CreatedAt        time.Time
 	UserID           uuid.UUID
 	TotalReviews     int32
-	TempoIntervalUp  int32
 	TempoIntervalDn  int32
 	PerfectThreshold int32
 	BadThreshold     int32

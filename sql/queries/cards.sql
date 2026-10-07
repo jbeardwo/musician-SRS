@@ -11,9 +11,7 @@ INSERT INTO cards(
   last_reviewed_num,
   created_at,
   deck_id,
-  tempo,
-  perfect_streak,
-  bad_streak
+  tempo
 ) VALUES (
   gen_random_uuid(),
   $1,
@@ -26,9 +24,7 @@ INSERT INTO cards(
   0,
   NOW(),
   $4,
-  $5,
-  0,
-  0
+  $5
 ) RETURNING 
   id,
   front_content,
@@ -41,9 +37,7 @@ INSERT INTO cards(
   last_reviewed_num,
   created_at,
   deck_id,
-  tempo,
-  perfect_streak,
-  bad_streak;
+  tempo;
 
 -- name: GetCardById :one
 SELECT * FROM cards
@@ -70,8 +64,6 @@ SET  front_content = $1,
   repetitions_count = $6,
   last_reviewed_at = $7,
   last_reviewed_num = $8,
-  tempo = $9,
-  perfect_streak = $10,
-  bad_streak = $11
-WHERE id = $12
+  tempo = $9
+WHERE id = $10
 RETURNING *;

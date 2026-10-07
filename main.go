@@ -60,13 +60,9 @@ func main() {
 	}
 
 	deckParams := database.CreateDeckParams{
-		Title:            "Deck",
-		Description:      "Testing The Program",
-		UserID:           user.ID,
-		TempoIntervalUp:  5,
-		TempoIntervalDn:  2,
-		PerfectThreshold: 5,
-		BadThreshold:     2,
+		Title:       "Deck",
+		Description: "Testing The Program",
+		UserID:      user.ID,
 	}
 
 	dbDeck, err := dbQueries.CreateDeck(ctx, deckParams)
@@ -75,16 +71,12 @@ func main() {
 	}
 
 	deck := study.Deck{
-		ID:               dbDeck.ID,
-		Title:            dbDeck.Title,
-		Description:      dbDeck.Description,
-		CreatedAt:        dbDeck.CreatedAt,
-		UserID:           dbDeck.UserID,
-		TotalReviews:     dbDeck.TotalReviews,
-		TempoIntervalUp:  dbDeck.TempoIntervalUp,
-		TempoIntervalDn:  dbDeck.TempoIntervalDn,
-		PerfectThreshold: dbDeck.PerfectThreshold,
-		BadThreshold:     dbDeck.BadThreshold,
+		ID:           dbDeck.ID,
+		Title:        dbDeck.Title,
+		Description:  dbDeck.Description,
+		CreatedAt:    dbDeck.CreatedAt,
+		UserID:       dbDeck.UserID,
+		TotalReviews: dbDeck.TotalReviews,
 	}
 
 	for _, note := range study.CommonNotes {
@@ -267,8 +259,6 @@ func (cfg *apiConfig) getCardsHandler(w http.ResponseWriter, r *http.Request) {
 			CreatedAt:        dbCard.CreatedAt,
 			DeckID:           dbCard.DeckID,
 			Tempo:            dbCard.Tempo,
-			PerfectStreak:    dbCard.PerfectStreak,
-			BadStreak:        dbCard.BadStreak,
 		})
 	}
 
@@ -320,13 +310,9 @@ func (cfg *apiConfig) deleteDeckHandler(w http.ResponseWriter, r *http.Request) 
 
 func (cfg *apiConfig) newDeckHandler(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		Title            string    `json:"title"`
-		Description      string    `json:"description"`
-		UserID           uuid.UUID `json:"user_id"`
-		TempoIntervalUp  int32     `json:"tempo_interval_up"`
-		TempoIntervalDn  int32     `json:"tempo_interval_dn"`
-		PerfectThreshold int32     `json:"perfect_threshold"`
-		BadThreshold     int32     `json:"bad_threshold"`
+		Title       string    `json:"title"`
+		Description string    `json:"description"`
+		UserID      uuid.UUID `json:"user_id"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -338,13 +324,9 @@ func (cfg *apiConfig) newDeckHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	deckParams := database.CreateDeckParams{
-		Title:            params.Title,
-		Description:      params.Description,
-		UserID:           params.UserID,
-		TempoIntervalUp:  params.TempoIntervalUp,
-		TempoIntervalDn:  params.TempoIntervalDn,
-		PerfectThreshold: params.PerfectThreshold,
-		BadThreshold:     params.BadThreshold,
+		Title:       params.Title,
+		Description: params.Description,
+		UserID:      params.UserID,
 	}
 
 	dbDeck, err := cfg.db.CreateDeck(cfg.ctx, deckParams)
@@ -353,16 +335,12 @@ func (cfg *apiConfig) newDeckHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	deck := study.Deck{
-		ID:               dbDeck.ID,
-		Title:            dbDeck.Title,
-		Description:      dbDeck.Description,
-		CreatedAt:        dbDeck.CreatedAt,
-		UserID:           dbDeck.UserID,
-		TotalReviews:     dbDeck.TotalReviews,
-		TempoIntervalUp:  dbDeck.TempoIntervalUp,
-		TempoIntervalDn:  dbDeck.TempoIntervalDn,
-		PerfectThreshold: dbDeck.PerfectThreshold,
-		BadThreshold:     dbDeck.BadThreshold,
+		ID:           dbDeck.ID,
+		Title:        dbDeck.Title,
+		Description:  dbDeck.Description,
+		CreatedAt:    dbDeck.CreatedAt,
+		UserID:       dbDeck.UserID,
+		TotalReviews: dbDeck.TotalReviews,
 	}
 
 	respondWithJSON(w, http.StatusCreated, deck)
@@ -370,14 +348,10 @@ func (cfg *apiConfig) newDeckHandler(w http.ResponseWriter, r *http.Request) {
 
 func (cfg *apiConfig) updateDeckHandler(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		Title            string    `json:"title"`
-		Description      string    `json:"description"`
-		TotalReviews     int32     `json:"total_reviews"`
-		TempoIntervalUp  int32     `json:"tempo_interval_up"`
-		TempoIntervalDn  int32     `json:"tempo_interval_dn"`
-		PerfectThreshold int32     `json:"perfect_threshold"`
-		BadThreshold     int32     `json:"bad_threshold"`
-		ID               uuid.UUID `json:"id"`
+		Title        string    `json:"title"`
+		Description  string    `json:"description"`
+		TotalReviews int32     `json:"total_reviews"`
+		ID           uuid.UUID `json:"id"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -389,14 +363,10 @@ func (cfg *apiConfig) updateDeckHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	deckParams := database.UpdateDeckParams{
-		Title:            params.Title,
-		Description:      params.Description,
-		TotalReviews:     params.TotalReviews,
-		TempoIntervalUp:  params.TempoIntervalUp,
-		TempoIntervalDn:  params.TempoIntervalDn,
-		PerfectThreshold: params.PerfectThreshold,
-		BadThreshold:     params.BadThreshold,
-		ID:               params.ID,
+		Title:        params.Title,
+		Description:  params.Description,
+		TotalReviews: params.TotalReviews,
+		ID:           params.ID,
 	}
 
 	dbDeck, err := cfg.db.UpdateDeck(cfg.ctx, deckParams)
@@ -405,16 +375,12 @@ func (cfg *apiConfig) updateDeckHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	deck := study.Deck{
-		ID:               dbDeck.ID,
-		Title:            dbDeck.Title,
-		Description:      dbDeck.Description,
-		CreatedAt:        dbDeck.CreatedAt,
-		UserID:           dbDeck.UserID,
-		TotalReviews:     dbDeck.TotalReviews,
-		TempoIntervalUp:  dbDeck.TempoIntervalUp,
-		TempoIntervalDn:  dbDeck.TempoIntervalDn,
-		PerfectThreshold: dbDeck.PerfectThreshold,
-		BadThreshold:     dbDeck.BadThreshold,
+		ID:           dbDeck.ID,
+		Title:        dbDeck.Title,
+		Description:  dbDeck.Description,
+		CreatedAt:    dbDeck.CreatedAt,
+		UserID:       dbDeck.UserID,
+		TotalReviews: dbDeck.TotalReviews,
 	}
 
 	respondWithJSON(w, http.StatusOK, deck)
@@ -432,8 +398,6 @@ func (cfg *apiConfig) updateCardHandler(w http.ResponseWriter, r *http.Request) 
 		LastReviewedAt   sql.NullTime `json:"last_reviewed_at"`
 		LastReviewedNum  int32        `json:"last_reviewed_num"`
 		Tempo            int32        `json:"tempo"`
-		PerfectStreak    int32        `json:"perfect_streak"`
-		BadStreak        int32        `json:"bad_streak"`
 		ID               uuid.UUID    `json:"id"`
 	}
 
@@ -455,8 +419,6 @@ func (cfg *apiConfig) updateCardHandler(w http.ResponseWriter, r *http.Request) 
 		LastReviewedAt:   params.LastReviewedAt,
 		LastReviewedNum:  params.LastReviewedNum,
 		Tempo:            params.Tempo,
-		PerfectStreak:    params.PerfectStreak,
-		BadStreak:        params.BadStreak,
 		ID:               params.ID,
 	}
 
@@ -478,8 +440,6 @@ func (cfg *apiConfig) updateCardHandler(w http.ResponseWriter, r *http.Request) 
 		DeckID:           dbCard.DeckID,
 		CreatedAt:        dbCard.CreatedAt,
 		Tempo:            dbCard.Tempo,
-		PerfectStreak:    dbCard.PerfectStreak,
-		BadStreak:        dbCard.BadStreak,
 	}
 
 	respondWithJSON(w, http.StatusOK, card)
@@ -528,8 +488,6 @@ func (cfg *apiConfig) newCardHandler(w http.ResponseWriter, r *http.Request) {
 		CreatedAt:        dbCard.CreatedAt,
 		DeckID:           dbCard.DeckID,
 		Tempo:            dbCard.Tempo,
-		PerfectStreak:    dbCard.PerfectStreak,
-		BadStreak:        dbCard.BadStreak,
 	}
 
 	respondWithJSON(w, http.StatusCreated, card)

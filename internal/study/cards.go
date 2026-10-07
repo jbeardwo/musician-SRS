@@ -21,8 +21,6 @@ type Card struct {
 	CreatedAt        time.Time    `json:"created_at"`
 	DeckID           uuid.UUID    `json:"deck_id"`
 	Tempo            int32        `json:"tempo"`
-	PerfectStreak    int32        `json:"perfectstreak"`
-	BadStreak        int32        `json:"badstreak"`
 }
 
 func (c *Card) EvaluateCard(eval int) {
@@ -30,17 +28,10 @@ func (c *Card) EvaluateCard(eval int) {
 		c.Interval = 1
 		c.EaseFactor = math.Max(c.EaseFactor*.80, 1.3)
 		c.RepetitionsCount = 0
-		c.BadStreak += 1
 	} else if eval <= 3 {
-		c.BadStreak = 0
 		c.Interval = int32(math.Round(float64(c.Interval) * c.EaseFactor))
 		c.EaseFactor = math.Max(c.EaseFactor*(0.7+(0.15*float64(eval))), .85)
 		c.RepetitionsCount += 1
-		if eval == 3 {
-			c.PerfectStreak += 1
-		} else {
-			c.PerfectStreak = 0
-		}
 	}
 
 	c.LastReviewedAt = sql.NullTime{Time: time.Now(), Valid: true}

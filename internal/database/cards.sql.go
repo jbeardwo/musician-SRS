@@ -25,9 +25,7 @@ INSERT INTO cards(
   last_reviewed_num,
   created_at,
   deck_id,
-  tempo,
-  perfect_streak,
-  bad_streak
+  tempo
 ) VALUES (
   gen_random_uuid(),
   $1,
@@ -40,9 +38,7 @@ INSERT INTO cards(
   0,
   NOW(),
   $4,
-  $5,
-  0,
-  0
+  $5
 ) RETURNING 
   id,
   front_content,
@@ -55,9 +51,7 @@ INSERT INTO cards(
   last_reviewed_num,
   created_at,
   deck_id,
-  tempo,
-  perfect_streak,
-  bad_streak
+  tempo
 `
 
 type CreateCardParams struct {
@@ -90,8 +84,6 @@ func (q *Queries) CreateCard(ctx context.Context, arg CreateCardParams) (Card, e
 		&i.CreatedAt,
 		&i.DeckID,
 		&i.Tempo,
-		&i.PerfectStreak,
-		&i.BadStreak,
 	)
 	return i, err
 }
@@ -116,7 +108,7 @@ func (q *Queries) DeleteCards(ctx context.Context) error {
 }
 
 const getCardById = `-- name: GetCardById :one
-SELECT id, front_content, back_content, interval, target, ease_factor, repetitions_count, last_reviewed_at, last_reviewed_num, created_at, deck_id, tempo, perfect_streak, bad_streak FROM cards
+SELECT id, front_content, back_content, interval, target, ease_factor, repetitions_count, last_reviewed_at, last_reviewed_num, created_at, deck_id, tempo FROM cards
 WHERE id = $1
 `
 
@@ -136,14 +128,12 @@ func (q *Queries) GetCardById(ctx context.Context, id uuid.UUID) (Card, error) {
 		&i.CreatedAt,
 		&i.DeckID,
 		&i.Tempo,
-		&i.PerfectStreak,
-		&i.BadStreak,
 	)
 	return i, err
 }
 
 const getCardsByDeck = `-- name: GetCardsByDeck :many
-SELECT id, front_content, back_content, interval, target, ease_factor, repetitions_count, last_reviewed_at, last_reviewed_num, created_at, deck_id, tempo, perfect_streak, bad_streak FROM cards
+SELECT id, front_content, back_content, interval, target, ease_factor, repetitions_count, last_reviewed_at, last_reviewed_num, created_at, deck_id, tempo FROM cards
 WHERE deck_id = $1
 `
 
@@ -169,8 +159,6 @@ func (q *Queries) GetCardsByDeck(ctx context.Context, deckID uuid.UUID) ([]Card,
 			&i.CreatedAt,
 			&i.DeckID,
 			&i.Tempo,
-			&i.PerfectStreak,
-			&i.BadStreak,
 		); err != nil {
 			return nil, err
 		}
@@ -195,11 +183,9 @@ SET  front_content = $1,
   repetitions_count = $6,
   last_reviewed_at = $7,
   last_reviewed_num = $8,
-  tempo = $9,
-  perfect_streak = $10,
-  bad_streak = $11
-WHERE id = $12
-RETURNING id, front_content, back_content, interval, target, ease_factor, repetitions_count, last_reviewed_at, last_reviewed_num, created_at, deck_id, tempo, perfect_streak, bad_streak
+  tempo = $9
+WHERE id = $10
+RETURNING id, front_content, back_content, interval, target, ease_factor, repetitions_count, last_reviewed_at, last_reviewed_num, created_at, deck_id, tempo
 `
 
 type UpdateCardParams struct {
@@ -212,8 +198,6 @@ type UpdateCardParams struct {
 	LastReviewedAt   sql.NullTime
 	LastReviewedNum  int32
 	Tempo            int32
-	PerfectStreak    int32
-	BadStreak        int32
 	ID               uuid.UUID
 }
 
@@ -228,8 +212,6 @@ func (q *Queries) UpdateCard(ctx context.Context, arg UpdateCardParams) (Card, e
 		arg.LastReviewedAt,
 		arg.LastReviewedNum,
 		arg.Tempo,
-		arg.PerfectStreak,
-		arg.BadStreak,
 		arg.ID,
 	)
 	var i Card
@@ -246,8 +228,6 @@ func (q *Queries) UpdateCard(ctx context.Context, arg UpdateCardParams) (Card, e
 		&i.CreatedAt,
 		&i.DeckID,
 		&i.Tempo,
-		&i.PerfectStreak,
-		&i.BadStreak,
 	)
 	return i, err
 }

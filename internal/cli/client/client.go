@@ -160,8 +160,6 @@ type updateCardParams struct {
 	LastReviewedAt   sql.NullTime `json:"last_reviewed_at"`
 	LastReviewedNum  int32        `json:"last_reviewed_num"`
 	Tempo            int32        `json:"tempo"`
-	PerfectStreak    int32        `json:"perfect_streak"`
-	BadStreak        int32        `json:"bad_streak"`
 	ID               uuid.UUID    `json:"id"`
 }
 
@@ -182,8 +180,6 @@ func (cfg *clientConfig) clientModifyCard(c study.Card) {
 	params.LastReviewedAt = c.LastReviewedAt
 	params.LastReviewedNum = c.LastReviewedNum
 	params.Tempo = c.Tempo
-	params.PerfectStreak = c.PerfectStreak
-	params.BadStreak = c.BadStreak
 	params.ID = c.ID
 
 	_, err := requestUpdateCard(cfg.baseURL, params)
@@ -437,13 +433,9 @@ func (cfg *clientConfig) listCards(d *study.Deck) {
 }
 
 type newDeckParams struct {
-	Title            string    `json:"title"`
-	Description      string    `json:"description"`
-	UserID           uuid.UUID `json:"user_id"`
-	TempoIntervalUp  int32     `json:"tempo_interval_up"`
-	TempoIntervalDn  int32     `json:"tempo_interval_dn"`
-	PerfectThreshold int32     `json:"perfect_threshold"`
-	BadThreshold     int32     `json:"bad_threshold"`
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	UserID      uuid.UUID `json:"user_id"`
 }
 
 func (cfg *clientConfig) clientNewDeck() {
@@ -456,38 +448,6 @@ func (cfg *clientConfig) clientNewDeck() {
 	params.Description = strings.Join(GetInput(), " ")
 
 	params.UserID = cfg.currentUserID
-
-	fmt.Println("TempoIntervalUp:")
-	input, err := strconv.Atoi(GetInput()[0])
-	if err != nil {
-		fmt.Println("Invalid Input")
-		return
-	}
-	params.TempoIntervalUp = int32(input)
-
-	fmt.Println("TempoIntervalDn:")
-	input, err = strconv.Atoi(GetInput()[0])
-	if err != nil {
-		fmt.Println("Invalid Input")
-		return
-	}
-	params.TempoIntervalDn = int32(input)
-
-	fmt.Println("PerfectThreshold:")
-	input, err = strconv.Atoi(GetInput()[0])
-	if err != nil {
-		fmt.Println("Invalid Input")
-		return
-	}
-	params.PerfectThreshold = int32(input)
-
-	fmt.Println("BadThreshold")
-	input, err = strconv.Atoi(GetInput()[0])
-	if err != nil {
-		fmt.Println("Invalid Input")
-		return
-	}
-	params.BadThreshold = int32(input)
 
 	newDeck, err := requestNewDeck(cfg.baseURL, params)
 	if err != nil {
@@ -527,14 +487,10 @@ func requestNewDeck(baseURL string, params newDeckParams) (study.Deck, error) {
 }
 
 type updateDeckParams struct {
-	Title            string    `json:"title"`
-	Description      string    `json:"description"`
-	TotalReviews     int32     `json:"total_reviews"`
-	TempoIntervalUp  int32     `json:"tempo_interval_up"`
-	TempoIntervalDn  int32     `json:"tempo_interval_dn"`
-	PerfectThreshold int32     `json:"perfect_threshold"`
-	BadThreshold     int32     `json:"bad_threshold"`
-	ID               uuid.UUID `json:"id"`
+	Title        string    `json:"title"`
+	Description  string    `json:"description"`
+	TotalReviews int32     `json:"total_reviews"`
+	ID           uuid.UUID `json:"id"`
 }
 
 func (cfg *clientConfig) clientUpdateDeck(d study.Deck) {
@@ -547,42 +503,10 @@ func (cfg *clientConfig) clientUpdateDeck(d study.Deck) {
 	fmt.Println("Description:")
 	params.Description = strings.Join(GetInput(), " ")
 
-	fmt.Println("TempoIntervalUp:")
-	input, err := strconv.Atoi(GetInput()[0])
-	if err != nil {
-		fmt.Println("Invalid Input")
-		return
-	}
-	params.TempoIntervalUp = int32(input)
-
-	fmt.Println("TempoIntervalDn:")
-	input, err = strconv.Atoi(GetInput()[0])
-	if err != nil {
-		fmt.Println("Invalid Input")
-		return
-	}
-	params.TempoIntervalDn = int32(input)
-
-	fmt.Println("PerfectThreshold:")
-	input, err = strconv.Atoi(GetInput()[0])
-	if err != nil {
-		fmt.Println("Invalid Input")
-		return
-	}
-	params.PerfectThreshold = int32(input)
-
-	fmt.Println("BadThreshold")
-	input, err = strconv.Atoi(GetInput()[0])
-	if err != nil {
-		fmt.Println("Invalid Input")
-		return
-	}
-	params.BadThreshold = int32(input)
-
 	params.ID = d.ID
 	params.TotalReviews = d.TotalReviews
 
-	_, err = requestUpdateDeck(cfg.baseURL, params)
+	_, err := requestUpdateDeck(cfg.baseURL, params)
 	if err != nil {
 		fmt.Printf("problem updating deck: %s\n", err)
 		return
@@ -742,14 +666,6 @@ func (cfg *clientConfig) clientReviewDeck(d *study.Deck, n int) {
 		d.TotalReviews += 1
 		curCard.LastReviewedNum = d.TotalReviews
 		curCard.Target = d.TotalReviews + curCard.Interval
-		if curCard.BadStreak == d.BadThreshold {
-			curCard.Tempo -= d.TempoIntervalDn
-			curCard.BadStreak = 0
-		}
-		if curCard.PerfectStreak == d.PerfectThreshold {
-			curCard.Tempo += d.TempoIntervalUp
-			curCard.PerfectStreak = 0
-		}
 		log.Println(d.TotalReviews, curCard.Target, curCard.Interval, curCard.Tempo)
 		cfg.updateCard(curCard)
 		cfg.updateDeck(d)
@@ -760,14 +676,10 @@ func (cfg *clientConfig) clientReviewDeck(d *study.Deck, n int) {
 
 func (cfg *clientConfig) updateDeck(d *study.Deck) {
 	params := updateDeckParams{
-		Title:            d.Title,
-		Description:      d.Description,
-		TotalReviews:     d.TotalReviews,
-		TempoIntervalUp:  d.TempoIntervalUp,
-		TempoIntervalDn:  d.TempoIntervalDn,
-		PerfectThreshold: d.PerfectThreshold,
-		BadThreshold:     d.BadThreshold,
-		ID:               d.ID,
+		Title:        d.Title,
+		Description:  d.Description,
+		TotalReviews: d.TotalReviews,
+		ID:           d.ID,
 	}
 
 	_, err := requestUpdateDeck(cfg.baseURL, params)
@@ -788,8 +700,6 @@ func (cfg *clientConfig) updateCard(c study.Card) {
 	params.LastReviewedAt = c.LastReviewedAt
 	params.LastReviewedNum = c.LastReviewedNum
 	params.Tempo = c.Tempo
-	params.PerfectStreak = c.PerfectStreak
-	params.BadStreak = c.BadStreak
 	params.ID = c.ID
 
 	_, err := requestUpdateCard(cfg.baseURL, params)
