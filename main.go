@@ -93,17 +93,22 @@ func main() {
 		}
 
 		card := study.Card{
-			ID:               dbCard.ID,
-			FrontContent:     dbCard.FrontContent,
-			BackContent:      dbCard.BackContent,
-			Interval:         dbCard.Interval,
-			Target:           dbCard.Target,
-			EaseFactor:       dbCard.EaseFactor,
-			RepetitionsCount: dbCard.RepetitionsCount,
-			LastReviewedAt:   dbCard.LastReviewedAt,
-			CreatedAt:        dbCard.CreatedAt,
-			DeckID:           dbCard.DeckID,
-			Tempo:            dbCard.Tempo,
+			ID:                      dbCard.ID,
+			FrontContent:            dbCard.FrontContent,
+			BackContent:             dbCard.BackContent,
+			Interval:                dbCard.Interval,
+			Target:                  dbCard.Target,
+			EaseFactor:              dbCard.EaseFactor,
+			RepetitionsCount:        dbCard.RepetitionsCount,
+			LastReviewedAt:          dbCard.LastReviewedAt,
+			LastReviewedNum:         dbCard.LastReviewedNum,
+			CreatedAt:               dbCard.CreatedAt,
+			DeckID:                  dbCard.DeckID,
+			Tempo:                   dbCard.Tempo,
+			MasteredTempo:           dbCard.MasteredTempo,
+			MasteryStage:            study.MasteryStage(dbCard.MasteryStage),
+			MasteryStageTimeStarted: dbCard.MasteryStageTimeStarted,
+			ChallengeAgainCount:     dbCard.ChallengeAgainCount,
 		}
 
 		heap.Push(&deck.Cards, card)
@@ -248,18 +253,22 @@ func (cfg *apiConfig) getCardsHandler(w http.ResponseWriter, r *http.Request) {
 	cards := []study.Card{}
 	for _, dbCard := range dbCards {
 		cards = append(cards, study.Card{
-			ID:               dbCard.ID,
-			FrontContent:     dbCard.FrontContent,
-			BackContent:      dbCard.BackContent,
-			Interval:         dbCard.Interval,
-			Target:           dbCard.Target,
-			EaseFactor:       dbCard.EaseFactor,
-			RepetitionsCount: dbCard.RepetitionsCount,
-			LastReviewedAt:   dbCard.LastReviewedAt,
-			LastReviewedNum:  dbCard.LastReviewedNum,
-			CreatedAt:        dbCard.CreatedAt,
-			DeckID:           dbCard.DeckID,
-			Tempo:            dbCard.Tempo,
+			ID:                      dbCard.ID,
+			FrontContent:            dbCard.FrontContent,
+			BackContent:             dbCard.BackContent,
+			Interval:                dbCard.Interval,
+			Target:                  dbCard.Target,
+			EaseFactor:              dbCard.EaseFactor,
+			RepetitionsCount:        dbCard.RepetitionsCount,
+			LastReviewedAt:          dbCard.LastReviewedAt,
+			LastReviewedNum:         dbCard.LastReviewedNum,
+			CreatedAt:               dbCard.CreatedAt,
+			DeckID:                  dbCard.DeckID,
+			Tempo:                   dbCard.Tempo,
+			MasteredTempo:           dbCard.MasteredTempo,
+			MasteryStage:            study.MasteryStage(dbCard.MasteryStage),
+			MasteryStageTimeStarted: dbCard.MasteryStageTimeStarted,
+			ChallengeAgainCount:     dbCard.ChallengeAgainCount,
 		})
 	}
 
@@ -390,16 +399,20 @@ func (cfg *apiConfig) updateDeckHandler(w http.ResponseWriter, r *http.Request) 
 func (cfg *apiConfig) updateCardHandler(w http.ResponseWriter, r *http.Request) {
 
 	type parameters struct {
-		FrontContent     string       `json:"front_content"`
-		BackContent      string       `json:"back_content"`
-		Interval         int32        `json:"interval"`
-		Target           int32        `json:"target"`
-		EaseFactor       float64      `json:"ease_factor"`
-		RepetitionsCount int32        `json:"repetitions_count"`
-		LastReviewedAt   sql.NullTime `json:"last_reviewed_at"`
-		LastReviewedNum  int32        `json:"last_reviewed_num"`
-		Tempo            int32        `json:"tempo"`
-		ID               uuid.UUID    `json:"id"`
+		FrontContent            string       `json:"front_content"`
+		BackContent             string       `json:"back_content"`
+		Interval                int32        `json:"interval"`
+		Target                  int32        `json:"target"`
+		EaseFactor              float64      `json:"ease_factor"`
+		RepetitionsCount        int32        `json:"repetitions_count"`
+		LastReviewedAt          sql.NullTime `json:"last_reviewed_at"`
+		LastReviewedNum         int32        `json:"last_reviewed_num"`
+		Tempo                   int32        `json:"tempo"`
+		ID                      uuid.UUID    `json:"id"`
+		MasteredTempo           int32        `json:"mastered_tempo"`
+		MasteryStage            string       `json:"mastery_stage"`
+		MasteryStageTimeStarted sql.NullTime `json:"mastery_stage_time_started"`
+		ChallengeAgainCount     int32        `json:"challenge_again_count"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -411,16 +424,20 @@ func (cfg *apiConfig) updateCardHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	cardParams := database.UpdateCardParams{
-		FrontContent:     params.FrontContent,
-		BackContent:      params.BackContent,
-		Interval:         params.Interval,
-		Target:           params.Target,
-		EaseFactor:       params.EaseFactor,
-		RepetitionsCount: params.RepetitionsCount,
-		LastReviewedAt:   params.LastReviewedAt,
-		LastReviewedNum:  params.LastReviewedNum,
-		Tempo:            params.Tempo,
-		ID:               params.ID,
+		FrontContent:            params.FrontContent,
+		BackContent:             params.BackContent,
+		Interval:                params.Interval,
+		Target:                  params.Target,
+		EaseFactor:              params.EaseFactor,
+		RepetitionsCount:        params.RepetitionsCount,
+		LastReviewedAt:          params.LastReviewedAt,
+		LastReviewedNum:         params.LastReviewedNum,
+		Tempo:                   params.Tempo,
+		ID:                      params.ID,
+		MasteredTempo:           params.MasteredTempo,
+		MasteryStage:            params.MasteryStage,
+		MasteryStageTimeStarted: params.MasteryStageTimeStarted,
+		ChallengeAgainCount:     params.ChallengeAgainCount,
 	}
 
 	dbCard, err := cfg.db.UpdateCard(cfg.ctx, cardParams)
@@ -429,18 +446,22 @@ func (cfg *apiConfig) updateCardHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	card := study.Card{
-		ID:               dbCard.ID,
-		FrontContent:     dbCard.FrontContent,
-		BackContent:      dbCard.BackContent,
-		Interval:         dbCard.Interval,
-		Target:           dbCard.Target,
-		EaseFactor:       dbCard.EaseFactor,
-		RepetitionsCount: dbCard.RepetitionsCount,
-		LastReviewedAt:   dbCard.LastReviewedAt,
-		LastReviewedNum:  dbCard.LastReviewedNum,
-		DeckID:           dbCard.DeckID,
-		CreatedAt:        dbCard.CreatedAt,
-		Tempo:            dbCard.Tempo,
+		ID:                      dbCard.ID,
+		FrontContent:            dbCard.FrontContent,
+		BackContent:             dbCard.BackContent,
+		Interval:                dbCard.Interval,
+		Target:                  dbCard.Target,
+		EaseFactor:              dbCard.EaseFactor,
+		RepetitionsCount:        dbCard.RepetitionsCount,
+		LastReviewedAt:          dbCard.LastReviewedAt,
+		LastReviewedNum:         dbCard.LastReviewedNum,
+		DeckID:                  dbCard.DeckID,
+		CreatedAt:               dbCard.CreatedAt,
+		Tempo:                   dbCard.Tempo,
+		MasteredTempo:           dbCard.MasteredTempo,
+		MasteryStage:            study.MasteryStage(dbCard.MasteryStage),
+		MasteryStageTimeStarted: dbCard.MasteryStageTimeStarted,
+		ChallengeAgainCount:     dbCard.ChallengeAgainCount,
 	}
 
 	respondWithJSON(w, http.StatusOK, card)
@@ -477,18 +498,22 @@ func (cfg *apiConfig) newCardHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	card := study.Card{
-		ID:               dbCard.ID,
-		FrontContent:     dbCard.FrontContent,
-		BackContent:      dbCard.BackContent,
-		Interval:         dbCard.Interval,
-		Target:           dbCard.Target,
-		EaseFactor:       dbCard.EaseFactor,
-		RepetitionsCount: dbCard.RepetitionsCount,
-		LastReviewedAt:   dbCard.LastReviewedAt,
-		LastReviewedNum:  dbCard.LastReviewedNum,
-		CreatedAt:        dbCard.CreatedAt,
-		DeckID:           dbCard.DeckID,
-		Tempo:            dbCard.Tempo,
+		ID:                      dbCard.ID,
+		FrontContent:            dbCard.FrontContent,
+		BackContent:             dbCard.BackContent,
+		Interval:                dbCard.Interval,
+		Target:                  dbCard.Target,
+		EaseFactor:              dbCard.EaseFactor,
+		RepetitionsCount:        dbCard.RepetitionsCount,
+		LastReviewedAt:          dbCard.LastReviewedAt,
+		LastReviewedNum:         dbCard.LastReviewedNum,
+		CreatedAt:               dbCard.CreatedAt,
+		DeckID:                  dbCard.DeckID,
+		Tempo:                   dbCard.Tempo,
+		MasteredTempo:           dbCard.MasteredTempo,
+		MasteryStage:            study.MasteryStage(dbCard.MasteryStage),
+		MasteryStageTimeStarted: dbCard.MasteryStageTimeStarted,
+		ChallengeAgainCount:     dbCard.ChallengeAgainCount,
 	}
 
 	respondWithJSON(w, http.StatusCreated, card)

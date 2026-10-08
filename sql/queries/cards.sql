@@ -3,41 +3,18 @@ INSERT INTO cards(
   id,
   front_content,
   back_content,
-  interval,
   target,
-  ease_factor,
-  repetitions_count,
-  last_reviewed_at,
-  last_reviewed_num,
-  created_at,
   deck_id,
   tempo
 ) VALUES (
   gen_random_uuid(),
   $1,
   $2,
-  1,
   $3,
-  2.5,
-  0,
-  NULL,
-  0,
-  NOW(),
   $4,
   $5
-) RETURNING 
-  id,
-  front_content,
-  back_content,
-  interval,
-  target,
-  ease_factor,
-  repetitions_count,
-  last_reviewed_at,
-  last_reviewed_num,
-  created_at,
-  deck_id,
-  tempo;
+)
+RETURNING *;
 
 -- name: GetCardById :one
 SELECT * FROM cards
@@ -64,6 +41,10 @@ SET  front_content = $1,
   repetitions_count = $6,
   last_reviewed_at = $7,
   last_reviewed_num = $8,
-  tempo = $9
-WHERE id = $10
+  tempo = $9,
+  mastered_tempo = $10,
+  mastery_stage = $11,
+  mastery_stage_time_started = $12,
+  challenge_again_count = $13
+WHERE id = $14
 RETURNING *;

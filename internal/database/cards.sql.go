@@ -17,41 +17,18 @@ INSERT INTO cards(
   id,
   front_content,
   back_content,
-  interval,
   target,
-  ease_factor,
-  repetitions_count,
-  last_reviewed_at,
-  last_reviewed_num,
-  created_at,
   deck_id,
   tempo
 ) VALUES (
   gen_random_uuid(),
   $1,
   $2,
-  1,
   $3,
-  2.5,
-  0,
-  NULL,
-  0,
-  NOW(),
   $4,
   $5
-) RETURNING 
-  id,
-  front_content,
-  back_content,
-  interval,
-  target,
-  ease_factor,
-  repetitions_count,
-  last_reviewed_at,
-  last_reviewed_num,
-  created_at,
-  deck_id,
-  tempo
+)
+RETURNING id, front_content, back_content, interval, target, ease_factor, repetitions_count, last_reviewed_at, last_reviewed_num, created_at, deck_id, tempo, mastered_tempo, mastery_stage, mastery_stage_time_started, challenge_again_count
 `
 
 type CreateCardParams struct {
@@ -84,6 +61,10 @@ func (q *Queries) CreateCard(ctx context.Context, arg CreateCardParams) (Card, e
 		&i.CreatedAt,
 		&i.DeckID,
 		&i.Tempo,
+		&i.MasteredTempo,
+		&i.MasteryStage,
+		&i.MasteryStageTimeStarted,
+		&i.ChallengeAgainCount,
 	)
 	return i, err
 }
@@ -108,7 +89,7 @@ func (q *Queries) DeleteCards(ctx context.Context) error {
 }
 
 const getCardById = `-- name: GetCardById :one
-SELECT id, front_content, back_content, interval, target, ease_factor, repetitions_count, last_reviewed_at, last_reviewed_num, created_at, deck_id, tempo FROM cards
+SELECT id, front_content, back_content, interval, target, ease_factor, repetitions_count, last_reviewed_at, last_reviewed_num, created_at, deck_id, tempo, mastered_tempo, mastery_stage, mastery_stage_time_started, challenge_again_count FROM cards
 WHERE id = $1
 `
 
@@ -128,12 +109,16 @@ func (q *Queries) GetCardById(ctx context.Context, id uuid.UUID) (Card, error) {
 		&i.CreatedAt,
 		&i.DeckID,
 		&i.Tempo,
+		&i.MasteredTempo,
+		&i.MasteryStage,
+		&i.MasteryStageTimeStarted,
+		&i.ChallengeAgainCount,
 	)
 	return i, err
 }
 
 const getCardsByDeck = `-- name: GetCardsByDeck :many
-SELECT id, front_content, back_content, interval, target, ease_factor, repetitions_count, last_reviewed_at, last_reviewed_num, created_at, deck_id, tempo FROM cards
+SELECT id, front_content, back_content, interval, target, ease_factor, repetitions_count, last_reviewed_at, last_reviewed_num, created_at, deck_id, tempo, mastered_tempo, mastery_stage, mastery_stage_time_started, challenge_again_count FROM cards
 WHERE deck_id = $1
 `
 
@@ -159,6 +144,10 @@ func (q *Queries) GetCardsByDeck(ctx context.Context, deckID uuid.UUID) ([]Card,
 			&i.CreatedAt,
 			&i.DeckID,
 			&i.Tempo,
+			&i.MasteredTempo,
+			&i.MasteryStage,
+			&i.MasteryStageTimeStarted,
+			&i.ChallengeAgainCount,
 		); err != nil {
 			return nil, err
 		}
@@ -183,22 +172,30 @@ SET  front_content = $1,
   repetitions_count = $6,
   last_reviewed_at = $7,
   last_reviewed_num = $8,
-  tempo = $9
-WHERE id = $10
-RETURNING id, front_content, back_content, interval, target, ease_factor, repetitions_count, last_reviewed_at, last_reviewed_num, created_at, deck_id, tempo
+  tempo = $9,
+  mastered_tempo = $10,
+  mastery_stage = $11,
+  mastery_stage_time_started = $12,
+  challenge_again_count = $13
+WHERE id = $14
+RETURNING id, front_content, back_content, interval, target, ease_factor, repetitions_count, last_reviewed_at, last_reviewed_num, created_at, deck_id, tempo, mastered_tempo, mastery_stage, mastery_stage_time_started, challenge_again_count
 `
 
 type UpdateCardParams struct {
-	FrontContent     string
-	BackContent      string
-	Interval         int32
-	Target           int32
-	EaseFactor       float64
-	RepetitionsCount int32
-	LastReviewedAt   sql.NullTime
-	LastReviewedNum  int32
-	Tempo            int32
-	ID               uuid.UUID
+	FrontContent            string
+	BackContent             string
+	Interval                int32
+	Target                  int32
+	EaseFactor              float64
+	RepetitionsCount        int32
+	LastReviewedAt          sql.NullTime
+	LastReviewedNum         int32
+	Tempo                   int32
+	MasteredTempo           int32
+	MasteryStage            string
+	MasteryStageTimeStarted sql.NullTime
+	ChallengeAgainCount     int32
+	ID                      uuid.UUID
 }
 
 func (q *Queries) UpdateCard(ctx context.Context, arg UpdateCardParams) (Card, error) {
@@ -212,6 +209,10 @@ func (q *Queries) UpdateCard(ctx context.Context, arg UpdateCardParams) (Card, e
 		arg.LastReviewedAt,
 		arg.LastReviewedNum,
 		arg.Tempo,
+		arg.MasteredTempo,
+		arg.MasteryStage,
+		arg.MasteryStageTimeStarted,
+		arg.ChallengeAgainCount,
 		arg.ID,
 	)
 	var i Card
@@ -228,6 +229,10 @@ func (q *Queries) UpdateCard(ctx context.Context, arg UpdateCardParams) (Card, e
 		&i.CreatedAt,
 		&i.DeckID,
 		&i.Tempo,
+		&i.MasteredTempo,
+		&i.MasteryStage,
+		&i.MasteryStageTimeStarted,
+		&i.ChallengeAgainCount,
 	)
 	return i, err
 }

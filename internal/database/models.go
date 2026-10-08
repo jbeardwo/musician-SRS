@@ -12,18 +12,22 @@ import (
 )
 
 type Card struct {
-	ID               uuid.UUID
-	FrontContent     string
-	BackContent      string
-	Interval         int32
-	Target           int32
-	EaseFactor       float64
-	RepetitionsCount int32
-	LastReviewedAt   sql.NullTime
-	LastReviewedNum  int32
-	CreatedAt        time.Time
-	DeckID           uuid.UUID
-	Tempo            int32
+	ID                      uuid.UUID
+	FrontContent            string
+	BackContent             string
+	Interval                int32
+	Target                  int32
+	EaseFactor              float64
+	RepetitionsCount        int32
+	LastReviewedAt          sql.NullTime
+	LastReviewedNum         int32
+	CreatedAt               time.Time
+	DeckID                  uuid.UUID
+	Tempo                   int32
+	MasteredTempo           int32
+	MasteryStage            string
+	MasteryStageTimeStarted sql.NullTime
+	ChallengeAgainCount     int32
 }
 
 type Deck struct {

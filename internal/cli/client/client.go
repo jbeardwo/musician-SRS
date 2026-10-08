@@ -151,7 +151,7 @@ func main() {
 			}
 			if cardNum >= 0 && cardNum < len(clientCfg.decks[deckNum].Cards) {
 				clientCfg.clientModifyCard(clientCfg.decks[deckNum].Cards[cardNum])
-			} else if len(clientCfg.decks[deckNum].NewCards) > 0 && cardNum < len(clientCfg.decks[deckNum].Cards)+len(clientCfg.decks[deckNum].NewCards) {
+			} else if cardNum >= len(clientCfg.decks[deckNum].Cards) && cardNum < len(clientCfg.decks[deckNum].Cards)+len(clientCfg.decks[deckNum].NewCards) {
 				clientCfg.clientModifyCard(clientCfg.decks[deckNum].NewCards[cardNum-len(clientCfg.decks[deckNum].Cards)])
 			} else {
 				fmt.Println("invalid card")
@@ -163,16 +163,20 @@ func main() {
 }
 
 type updateCardParams struct {
-	FrontContent     string       `json:"front_content"`
-	BackContent      string       `json:"back_content"`
-	Interval         int32        `json:"interval"`
-	Target           int32        `json:"target"`
-	EaseFactor       float64      `json:"ease_factor"`
-	RepetitionsCount int32        `json:"repetitions_count"`
-	LastReviewedAt   sql.NullTime `json:"last_reviewed_at"`
-	LastReviewedNum  int32        `json:"last_reviewed_num"`
-	Tempo            int32        `json:"tempo"`
-	ID               uuid.UUID    `json:"id"`
+	FrontContent            string       `json:"front_content"`
+	BackContent             string       `json:"back_content"`
+	Interval                int32        `json:"interval"`
+	Target                  int32        `json:"target"`
+	EaseFactor              float64      `json:"ease_factor"`
+	RepetitionsCount        int32        `json:"repetitions_count"`
+	LastReviewedAt          sql.NullTime `json:"last_reviewed_at"`
+	LastReviewedNum         int32        `json:"last_reviewed_num"`
+	Tempo                   int32        `json:"tempo"`
+	ID                      uuid.UUID    `json:"id"`
+	MasteredTempo           int32        `json:"mastered_tempo"`
+	MasteryStage            string       `json:"mastery_stage"`
+	MasteryStageTimeStarted sql.NullTime `json:"mastery_stage_time_started"`
+	ChallengeAgainCount     int32        `json:"challenge_again_count"`
 }
 
 func (cfg *clientConfig) clientModifyCard(c study.Card) {
@@ -193,6 +197,10 @@ func (cfg *clientConfig) clientModifyCard(c study.Card) {
 	params.LastReviewedNum = c.LastReviewedNum
 	params.Tempo = c.Tempo
 	params.ID = c.ID
+	params.MasteredTempo = c.MasteredTempo
+	params.MasteryStage = string(c.MasteryStage)
+	params.MasteryStageTimeStarted = c.MasteryStageTimeStarted
+	params.ChallengeAgainCount = c.ChallengeAgainCount
 
 	_, err := requestUpdateCard(cfg.baseURL, params)
 	if err != nil {
@@ -674,6 +682,7 @@ func (cfg *clientConfig) clientReviewDeck(d *study.Deck, n int) {
 		log.Println(d.TotalReviews, curCard.Target, curCard.Interval, curCard.Tempo)
 		rating := study.Rating(evaluation)
 		curCard.EvaluateCard(rating)
+		curCard.EvaluateMastery(rating)
 		d.TotalReviews += 1
 		curCard.LastReviewedNum = d.TotalReviews
 		curCard.Target = d.TotalReviews + curCard.Interval
@@ -712,6 +721,10 @@ func (cfg *clientConfig) updateCard(c study.Card) {
 	params.LastReviewedNum = c.LastReviewedNum
 	params.Tempo = c.Tempo
 	params.ID = c.ID
+	params.MasteredTempo = c.MasteredTempo
+	params.MasteryStage = string(c.MasteryStage)
+	params.MasteryStageTimeStarted = c.MasteryStageTimeStarted
+	params.ChallengeAgainCount = c.ChallengeAgainCount
 
 	_, err := requestUpdateCard(cfg.baseURL, params)
 	if err != nil {
