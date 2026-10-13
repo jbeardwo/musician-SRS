@@ -96,7 +96,7 @@ func (q *Queries) GetDeckById(ctx context.Context, id uuid.UUID) (Deck, error) {
 const getDecksByUser = `-- name: GetDecksByUser :many
   SELECT id, title, description, created_at, user_id, total_reviews FROM decks
   WHERE user_id = $1
-  ORDER BY created_at ASC
+  ORDER BY created_at, id
 `
 
 func (q *Queries) GetDecksByUser(ctx context.Context, userID uuid.UUID) ([]Deck, error) {

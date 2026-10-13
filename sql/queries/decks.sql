@@ -36,7 +36,7 @@ INSERT INTO decks (
 -- name: GetDecksByUser :many
   SELECT * FROM decks
   WHERE user_id = $1
-  ORDER BY created_at ASC;
+  ORDER BY created_at, id;
 
 -- name: UpdateDeck :one
 UPDATE decks

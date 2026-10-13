@@ -120,6 +120,7 @@ func (q *Queries) GetCardById(ctx context.Context, id uuid.UUID) (Card, error) {
 const getCardsByDeck = `-- name: GetCardsByDeck :many
 SELECT id, front_content, back_content, interval, target, ease_factor, repetitions_count, last_reviewed_at, last_reviewed_num, created_at, deck_id, tempo, mastered_tempo, mastery_stage, mastery_stage_time_started, challenge_again_count FROM cards
 WHERE deck_id = $1
+ORDER BY created_at, id
 `
 
 func (q *Queries) GetCardsByDeck(ctx context.Context, deckID uuid.UUID) ([]Card, error) {

@@ -123,13 +123,23 @@ func main() {
 	serveMux.HandleFunc("GET /api/healthz", readyHandler)
 	serveMux.HandleFunc("POST /api/login", apiCfg.loginHandler)
 	serveMux.HandleFunc("GET /api/decks", apiCfg.getDecksHandler)
+	serveMux.HandleFunc("GET /api/decks/{deckID}", apiCfg.getDeckHandler)
 	serveMux.HandleFunc("GET /api/cards", apiCfg.getCardsHandler)
+	serveMux.HandleFunc("GET /api/cards/{cardID}", apiCfg.getCardHandler)
 	serveMux.HandleFunc("POST /api/decks", apiCfg.newDeckHandler)
 	serveMux.HandleFunc("POST /api/cards", apiCfg.newCardHandler)
 	serveMux.HandleFunc("DELETE /api/decks/{deckID}", apiCfg.deleteDeckHandler)
 	serveMux.HandleFunc("DELETE /api/cards/{cardID}", apiCfg.deleteCardHandler)
 	serveMux.HandleFunc("PUT /api/decks", apiCfg.updateDeckHandler)
 	serveMux.HandleFunc("PUT /api/cards", apiCfg.updateCardHandler)
+	serveMux.HandleFunc("GET /{$}", homeHandler)
+	serveMux.HandleFunc("GET /js/login.js", loginJSHandler)
+	serveMux.HandleFunc("GET /decks", decksHandler)
+	serveMux.HandleFunc("GET /js/decks.js", decksJSHandler)
+	serveMux.HandleFunc("GET /edit-deck", editDeckHandler)
+	serveMux.HandleFunc("GET /js/edit-deck.js", editDeckJSHandler)
+	serveMux.HandleFunc("GET /edit-card", editCardHandler)
+	serveMux.HandleFunc("GET /js/edit-card.js", editCardJSHandler)
 
 	server := http.Server{
 		Handler: serveMux,
@@ -146,6 +156,22 @@ func readyHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte("OK"))
+}
+
+func loginJSHandler(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "web/js/login.js")
+}
+
+func decksJSHandler(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "web/js/decks.js")
+}
+
+func editDeckJSHandler(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "web/js/edit-deck.js")
+}
+
+func editCardJSHandler(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "web/js/edit-card.js")
 }
 
 func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
@@ -181,6 +207,22 @@ func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
 		Email:     dbUser.Email,
 	}
 	respondWithJSON(w, http.StatusOK, response)
+}
+
+func homeHandler(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "web/html/index.html")
+}
+
+func decksHandler(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "web/html/decks.html")
+}
+
+func editDeckHandler(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "web/html/edit-deck.html")
+}
+
+func editCardHandler(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "web/html/edit-card.html")
 }
 
 func (cfg *apiConfig) getDecksHandler(w http.ResponseWriter, r *http.Request) {
@@ -293,6 +335,70 @@ func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	_, _ = w.Write(dat)
+}
+
+func (cfg *apiConfig) getDeckHandler(w http.ResponseWriter, r *http.Request) {
+
+	deckIDstr := r.PathValue("deckID")
+	deckID, err := uuid.Parse(deckIDstr)
+	if err != nil {
+		respondWithError(w, 400, "Invalid deck ID")
+		return
+	}
+
+	dbDeck, err := cfg.db.GetDeckById(r.Context(), deckID)
+	if err != nil {
+		respondWithError(w, 404, "Deck not found")
+		return
+	}
+
+	deck := study.Deck{
+		ID:           dbDeck.ID,
+		Title:        dbDeck.Title,
+		Description:  dbDeck.Description,
+		CreatedAt:    dbDeck.CreatedAt,
+		UserID:       dbDeck.UserID,
+		TotalReviews: dbDeck.TotalReviews,
+	}
+
+	respondWithJSON(w, http.StatusOK, deck)
+}
+
+func (cfg *apiConfig) getCardHandler(w http.ResponseWriter, r *http.Request) {
+
+	cardIDstr := r.PathValue("cardID")
+	cardID, err := uuid.Parse(cardIDstr)
+	if err != nil {
+		respondWithError(w, 400, "Invalid card ID")
+		return
+	}
+
+	dbCard, err := cfg.db.GetCardById(r.Context(), cardID)
+	if err != nil {
+		respondWithError(w, 404, "Card not found")
+		return
+	}
+
+	card := study.Card{
+		ID:                      dbCard.ID,
+		FrontContent:            dbCard.FrontContent,
+		BackContent:             dbCard.BackContent,
+		Interval:                dbCard.Interval,
+		Target:                  dbCard.Target,
+		EaseFactor:              dbCard.EaseFactor,
+		RepetitionsCount:        dbCard.RepetitionsCount,
+		LastReviewedAt:          dbCard.LastReviewedAt,
+		LastReviewedNum:         dbCard.LastReviewedNum,
+		CreatedAt:               dbCard.CreatedAt,
+		DeckID:                  dbCard.DeckID,
+		Tempo:                   dbCard.Tempo,
+		MasteredTempo:           dbCard.MasteredTempo,
+		MasteryStage:            study.MasteryStage(dbCard.MasteryStage),
+		MasteryStageTimeStarted: dbCard.MasteryStageTimeStarted,
+		ChallengeAgainCount:     dbCard.ChallengeAgainCount,
+	}
+
+	respondWithJSON(w, http.StatusOK, card)
 }
 
 func (cfg *apiConfig) deleteDeckHandler(w http.ResponseWriter, r *http.Request) {

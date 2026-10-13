@@ -29,7 +29,8 @@ WHERE id = $1;
 
 -- name: GetCardsByDeck :many
 SELECT * FROM cards
-WHERE deck_id = $1;
+WHERE deck_id = $1
+ORDER BY created_at, id;
 
 -- name: UpdateCard :one
 UPDATE cards
