@@ -17,7 +17,7 @@ async function loadDecks() {
     deckDiv.innerHTML = `
       <h2>${deck.title}</h2>
       <p>${deck.description}</p>
-      <button>Study</button>
+      <a href="/study?deck_id=${deck.id}">Study</a>
       <a href="/edit-deck?deck_id=${deck.id}">Edit</a>
     `
     deckList.appendChild(deckDiv)

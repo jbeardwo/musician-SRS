@@ -140,6 +140,10 @@ func main() {
 	serveMux.HandleFunc("GET /js/edit-deck.js", editDeckJSHandler)
 	serveMux.HandleFunc("GET /edit-card", editCardHandler)
 	serveMux.HandleFunc("GET /js/edit-card.js", editCardJSHandler)
+	serveMux.HandleFunc("GET /study", studyHandler)
+	serveMux.HandleFunc("GET /js/study.js", studyJSHandler)
+	serveMux.HandleFunc("GET /api/study/next", apiCfg.nextCardHandler)
+	serveMux.HandleFunc("POST /api/study/evaluate", apiCfg.evaluateHandler)
 
 	server := http.Server{
 		Handler: serveMux,
@@ -172,6 +176,10 @@ func editDeckJSHandler(w http.ResponseWriter, r *http.Request) {
 
 func editCardJSHandler(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "web/js/edit-card.js")
+}
+
+func studyJSHandler(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "web/js/study.js")
 }
 
 func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
@@ -225,6 +233,10 @@ func editCardHandler(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "web/html/edit-card.html")
 }
 
+func studyHandler(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "web/html/study.html")
+}
+
 func (cfg *apiConfig) getDecksHandler(w http.ResponseWriter, r *http.Request) {
 	userIDstr := r.URL.Query().Get("user_id")
 
@@ -275,6 +287,80 @@ func (cfg *apiConfig) deleteCardHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	w.WriteHeader(204)
+}
+
+func (cfg *apiConfig) nextCardHandler(w http.ResponseWriter, r *http.Request) {
+	deckIDstr := r.URL.Query().Get("deck_id")
+	deckID, err := uuid.Parse(deckIDstr)
+	if err != nil || deckID == uuid.Nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid deck ID")
+		return
+	}
+
+	dbDeck, err := cfg.db.GetDeckById(r.Context(), deckID)
+	if err != nil {
+		respondWithError(w, 404, "Deck not found")
+		return
+	}
+
+	deck := study.Deck{
+		ID:           dbDeck.ID,
+		Title:        dbDeck.Title,
+		Description:  dbDeck.Description,
+		CreatedAt:    dbDeck.CreatedAt,
+		UserID:       dbDeck.UserID,
+		TotalReviews: dbDeck.TotalReviews,
+	}
+
+	var dbCards []database.Card
+	dbCards, err = cfg.db.GetCardsByDeck(r.Context(), deckID)
+	if err != nil {
+		respondWithError(w, 500, "Error getting cards")
+		return
+	}
+	cardsIn := []study.Card{}
+	for _, dbCard := range dbCards {
+		cardsIn = append(cardsIn, study.Card{
+			ID:                      dbCard.ID,
+			FrontContent:            dbCard.FrontContent,
+			BackContent:             dbCard.BackContent,
+			Interval:                dbCard.Interval,
+			Target:                  dbCard.Target,
+			EaseFactor:              dbCard.EaseFactor,
+			RepetitionsCount:        dbCard.RepetitionsCount,
+			LastReviewedAt:          dbCard.LastReviewedAt,
+			LastReviewedNum:         dbCard.LastReviewedNum,
+			CreatedAt:               dbCard.CreatedAt,
+			DeckID:                  dbCard.DeckID,
+			Tempo:                   dbCard.Tempo,
+			MasteredTempo:           dbCard.MasteredTempo,
+			MasteryStage:            study.MasteryStage(dbCard.MasteryStage),
+			MasteryStageTimeStarted: dbCard.MasteryStageTimeStarted,
+			ChallengeAgainCount:     dbCard.ChallengeAgainCount,
+		})
+	}
+	var cards []study.Card
+	var newCards []study.Card
+
+	for _, c := range cardsIn {
+		if c.LastReviewedAt.Valid {
+			cards = append(cards, c)
+		} else {
+			newCards = append(newCards, c)
+		}
+	}
+
+	deck.Cards = cards
+	heap.Init(&deck.Cards)
+	deck.NewCards = newCards
+
+	nextCard, err := deck.GetNextCard()
+	if err != nil {
+		respondWithError(w, 500, "error getting card")
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, nextCard)
 }
 
 func (cfg *apiConfig) getCardsHandler(w http.ResponseWriter, r *http.Request) {
@@ -500,6 +586,114 @@ func (cfg *apiConfig) updateDeckHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	respondWithJSON(w, http.StatusOK, deck)
+}
+
+func (cfg *apiConfig) evaluateHandler(w http.ResponseWriter, r *http.Request) {
+
+	type parameters struct {
+		DeckID uuid.UUID    `json:"deck_id"`
+		CardID uuid.UUID    `json:"card_id"`
+		Rating study.Rating `json:"rating"`
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	params := parameters{}
+	err := decoder.Decode(&params)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid JSON body")
+		return
+	}
+
+	dbDeck, err := cfg.db.GetDeckById(cfg.ctx, params.DeckID)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid Deck ID")
+		return
+	}
+	deck := study.Deck{
+		ID:           dbDeck.ID,
+		Title:        dbDeck.Title,
+		Description:  dbDeck.Description,
+		CreatedAt:    dbDeck.CreatedAt,
+		UserID:       dbDeck.UserID,
+		TotalReviews: dbDeck.TotalReviews,
+	}
+
+	dbCard, err := cfg.db.GetCardById(cfg.ctx, params.CardID)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid Card ID")
+		return
+	}
+	card := study.Card{
+		ID:                      dbCard.ID,
+		FrontContent:            dbCard.FrontContent,
+		BackContent:             dbCard.BackContent,
+		Interval:                dbCard.Interval,
+		Target:                  dbCard.Target,
+		EaseFactor:              dbCard.EaseFactor,
+		RepetitionsCount:        dbCard.RepetitionsCount,
+		LastReviewedAt:          dbCard.LastReviewedAt,
+		LastReviewedNum:         dbCard.LastReviewedNum,
+		CreatedAt:               dbCard.CreatedAt,
+		DeckID:                  dbCard.DeckID,
+		Tempo:                   dbCard.Tempo,
+		MasteredTempo:           dbCard.MasteredTempo,
+		MasteryStage:            study.MasteryStage(dbCard.MasteryStage),
+		MasteryStageTimeStarted: dbCard.MasteryStageTimeStarted,
+		ChallengeAgainCount:     dbCard.ChallengeAgainCount,
+	}
+
+	if card.DeckID != deck.ID {
+		respondWithError(w, http.StatusBadRequest, "Card does not belong to deck")
+		return
+	}
+	rating := params.Rating
+	if params.Rating < study.Again || params.Rating > study.Easy {
+		respondWithError(w, http.StatusBadRequest, "Invalid rating")
+		return
+	}
+	card.EvaluateCard(rating)
+	card.EvaluateMastery(rating)
+
+	deck.TotalReviews++
+	card.LastReviewedNum = deck.TotalReviews
+	card.Target = deck.TotalReviews + card.Interval
+
+	cardParams := database.UpdateCardParams{
+		FrontContent:            card.FrontContent,
+		BackContent:             card.BackContent,
+		Interval:                card.Interval,
+		Target:                  card.Target,
+		EaseFactor:              card.EaseFactor,
+		RepetitionsCount:        card.RepetitionsCount,
+		LastReviewedAt:          card.LastReviewedAt,
+		LastReviewedNum:         card.LastReviewedNum,
+		Tempo:                   card.Tempo,
+		MasteredTempo:           card.MasteredTempo,
+		MasteryStage:            string(card.MasteryStage),
+		MasteryStageTimeStarted: card.MasteryStageTimeStarted,
+		ChallengeAgainCount:     card.ChallengeAgainCount,
+		ID:                      card.ID,
+	}
+
+	_, err = cfg.db.UpdateCard(r.Context(), cardParams)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Error updating card")
+		return
+	}
+
+	deckParams := database.UpdateDeckParams{
+		Title:        deck.Title,
+		Description:  deck.Description,
+		TotalReviews: deck.TotalReviews,
+		ID:           deck.ID,
+	}
+
+	_, err = cfg.db.UpdateDeck(r.Context(), deckParams)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Error updating deck")
+		return
+	}
+	respondWithJSON(w, http.StatusOK, card)
 }
 
 func (cfg *apiConfig) updateCardHandler(w http.ResponseWriter, r *http.Request) {
