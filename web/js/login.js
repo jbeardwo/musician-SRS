@@ -1,6 +1,7 @@
 
 const form = document.getElementById("login-form")
 const emailInput = document.getElementById("email")
+document.getElementById("create-user").href = "/create-user"
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault()

@@ -128,8 +128,10 @@ func main() {
 	serveMux.HandleFunc("GET /api/cards/{cardID}", apiCfg.getCardHandler)
 	serveMux.HandleFunc("POST /api/decks", apiCfg.newDeckHandler)
 	serveMux.HandleFunc("POST /api/cards", apiCfg.newCardHandler)
+	serveMux.HandleFunc("POST /api/users", apiCfg.newUserHandler)
 	serveMux.HandleFunc("DELETE /api/decks/{deckID}", apiCfg.deleteDeckHandler)
 	serveMux.HandleFunc("DELETE /api/cards/{cardID}", apiCfg.deleteCardHandler)
+	serveMux.HandleFunc("DELETE /api/users/{userID}", apiCfg.deleteUserHandler)
 	serveMux.HandleFunc("PUT /api/decks", apiCfg.updateDeckHandler)
 	serveMux.HandleFunc("PUT /api/cards", apiCfg.updateCardHandler)
 	serveMux.HandleFunc("GET /{$}", homeHandler)
@@ -142,6 +144,8 @@ func main() {
 	serveMux.HandleFunc("GET /js/edit-card.js", editCardJSHandler)
 	serveMux.HandleFunc("GET /study", studyHandler)
 	serveMux.HandleFunc("GET /js/study.js", studyJSHandler)
+	serveMux.HandleFunc("GET /create-user", createUserHandler)
+	serveMux.HandleFunc("GET /js/create-user.js", createUserJSHandler)
 	serveMux.HandleFunc("GET /api/study/next", apiCfg.nextCardHandler)
 	serveMux.HandleFunc("POST /api/study/evaluate", apiCfg.evaluateHandler)
 
@@ -180,6 +184,10 @@ func editCardJSHandler(w http.ResponseWriter, r *http.Request) {
 
 func studyJSHandler(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "web/js/study.js")
+}
+
+func createUserJSHandler(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "web/js/create-user.js")
 }
 
 func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
@@ -237,6 +245,10 @@ func studyHandler(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "web/html/study.html")
 }
 
+func createUserHandler(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "web/html/create-user.html")
+}
+
 func (cfg *apiConfig) getDecksHandler(w http.ResponseWriter, r *http.Request) {
 	userIDstr := r.URL.Query().Get("user_id")
 
@@ -281,6 +293,30 @@ func (cfg *apiConfig) deleteCardHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	err = cfg.db.DeleteCard(r.Context(), cardID)
+	if err != nil {
+		respondWithError(w, 500, "Something went wrong")
+		return
+	}
+
+	w.WriteHeader(204)
+}
+
+func (cfg *apiConfig) deleteUserHandler(w http.ResponseWriter, r *http.Request) {
+
+	userIDstr := r.PathValue("userID")
+	userID, err := uuid.Parse(userIDstr)
+	if err != nil {
+		respondWithError(w, 400, "Invalid user ID")
+		return
+	}
+
+	_, err = cfg.db.GetUserById(r.Context(), userID)
+	if err != nil {
+		respondWithError(w, 404, "User not found")
+		return
+	}
+
+	err = cfg.db.DeleteUser(r.Context(), userID)
 	if err != nil {
 		respondWithError(w, 500, "Something went wrong")
 		return
@@ -817,4 +853,33 @@ func (cfg *apiConfig) newCardHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondWithJSON(w, http.StatusCreated, card)
+}
+
+func (cfg *apiConfig) newUserHandler(w http.ResponseWriter, r *http.Request) {
+	type parameters struct {
+		Email string `json:"email"`
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	params := parameters{}
+	err := decoder.Decode(&params)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid JSON body")
+		return
+	}
+
+	dbUser, err := cfg.db.CreateUser(r.Context(), params.Email)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Error creating user")
+		return
+	}
+
+	user := study.User{
+		ID:        dbUser.ID,
+		CreatedAt: dbUser.CreatedAt,
+		UpdatedAt: dbUser.UpdatedAt,
+		Email:     dbUser.Email,
+	}
+
+	respondWithJSON(w, http.StatusCreated, user)
 }

@@ -5,6 +5,8 @@ async function loadNextCard() {
   const params = new URLSearchParams(window.location.search)
   const deckID = params.get("deck_id")
 
+  document.getElementById("back").href = "/decks"
+
   const response = await fetch(`/api/study/next?deck_id=${deckID}`)
 
   if (!response.ok) {
@@ -14,9 +16,11 @@ async function loadNextCard() {
   currentCard = await response.json()
   const frontContentDiv = document.getElementById("front-content")
   const backContentDiv = document.getElementById("back-content")
+  const tempoDiv = document.getElementById("tempo")
 
   frontContentDiv.innerHTML = `<p>${currentCard.front_content}</p>`
   backContentDiv.innerHTML = `<p>${currentCard.back_content}</p>`
+  tempoDiv.innerHTML = `<p>${currentCard.tempo}</p>`
 }
 
 async function evaluateCard(rating) {
