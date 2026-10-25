@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Card</title>
+</head>
+<body>
+    <a href="/decks">Back</a>
+    <p id="card-error" hidden></p>
+
+    <h1>Card Info:</h1>
+    <form id="card-form">
+      Front: <input id="front-content" type="text">
+      Back: <input id="back-content" type="text">
+      Tempo: <input id="tempo" type="number">
+    <button type="submit">Create</button>
+    </form>
+
+    <label>
+      <input id="advanced-options" type="checkbox">
+      Advanced Options
+    </label>
+
+    <div id="advanced-section" hidden>
+      <div id="note-options">Notes:</div>
+      <div id="accidental-options">Accidentals:</div>
+      <div id="mode-options">Mode:</div>
+      <div id="interval-options">Interval</div>
+      <div id="inversion-options">Inversion</div>
+      <div id="direction-options">Direction</div>  
+      <div id="chord-options">Chord:</div>  
+
+    </div>
+<script src="/js/create-card.js"></script>
+</body>
+</html>

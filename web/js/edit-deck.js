@@ -32,6 +32,8 @@ async function loadDeck() {
   const params = new URLSearchParams(window.location.search)
   const deckID = params.get("deck_id")
 
+  document.getElementById("create-card").href = `/create-card?deck_id=${deckID}`
+
   const response = await fetch(`/api/decks/${deckID}`)
 
   if (!response.ok) {

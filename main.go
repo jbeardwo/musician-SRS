@@ -146,6 +146,10 @@ func main() {
 	serveMux.HandleFunc("GET /js/study.js", studyJSHandler)
 	serveMux.HandleFunc("GET /create-user", createUserHandler)
 	serveMux.HandleFunc("GET /js/create-user.js", createUserJSHandler)
+	serveMux.HandleFunc("GET /create-deck", createDeckHandler)
+	serveMux.HandleFunc("GET /js/create-deck.js", createDeckJSHandler)
+	serveMux.HandleFunc("GET /create-card", createCardHandler)
+	serveMux.HandleFunc("GET /js/create-card.js", createCardJSHandler)
 	serveMux.HandleFunc("GET /api/study/next", apiCfg.nextCardHandler)
 	serveMux.HandleFunc("POST /api/study/evaluate", apiCfg.evaluateHandler)
 
@@ -188,6 +192,14 @@ func studyJSHandler(w http.ResponseWriter, r *http.Request) {
 
 func createUserJSHandler(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "web/js/create-user.js")
+}
+
+func createDeckJSHandler(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "web/js/create-deck.js")
+}
+
+func createCardJSHandler(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "web/js/create-card.js")
 }
 
 func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
@@ -247,6 +259,14 @@ func studyHandler(w http.ResponseWriter, r *http.Request) {
 
 func createUserHandler(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "web/html/create-user.html")
+}
+
+func createDeckHandler(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "web/html/create-deck.html")
+}
+
+func createCardHandler(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "web/html/create-card.html")
 }
 
 func (cfg *apiConfig) getDecksHandler(w http.ResponseWriter, r *http.Request) {
