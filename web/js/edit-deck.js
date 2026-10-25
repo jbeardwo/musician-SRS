@@ -72,7 +72,7 @@ form.addEventListener("submit", async (event) => {
     error.textContent = "Deck not found"
     error.hidden = false
   } else {
-    const currentDeck = await response.json()
+    currentDeck = await response.json()
     error.textContent = "Saved"
     error.hidden = false
   }

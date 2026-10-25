@@ -1,0 +1,38 @@
+package main
+
+import "net/http"
+
+func registerRoutes(serveMux *http.ServeMux, apiCfg apiConfig) {
+	serveMux.HandleFunc("GET /api/healthz", readyHandler)
+	serveMux.HandleFunc("POST /api/login", apiCfg.loginHandler)
+	serveMux.HandleFunc("GET /api/decks", apiCfg.getDecksHandler)
+	serveMux.HandleFunc("GET /api/decks/{deckID}", apiCfg.getDeckHandler)
+	serveMux.HandleFunc("GET /api/cards", apiCfg.getCardsHandler)
+	serveMux.HandleFunc("GET /api/cards/{cardID}", apiCfg.getCardHandler)
+	serveMux.HandleFunc("POST /api/decks", apiCfg.newDeckHandler)
+	serveMux.HandleFunc("POST /api/cards", apiCfg.newCardHandler)
+	serveMux.HandleFunc("POST /api/users", apiCfg.newUserHandler)
+	serveMux.HandleFunc("DELETE /api/decks/{deckID}", apiCfg.deleteDeckHandler)
+	serveMux.HandleFunc("DELETE /api/cards/{cardID}", apiCfg.deleteCardHandler)
+	serveMux.HandleFunc("DELETE /api/users/{userID}", apiCfg.deleteUserHandler)
+	serveMux.HandleFunc("PUT /api/decks", apiCfg.updateDeckHandler)
+	serveMux.HandleFunc("PUT /api/cards", apiCfg.updateCardHandler)
+	serveMux.HandleFunc("GET /{$}", homeHandler)
+	serveMux.HandleFunc("GET /js/login.js", loginJSHandler)
+	serveMux.HandleFunc("GET /decks", decksHandler)
+	serveMux.HandleFunc("GET /js/decks.js", decksJSHandler)
+	serveMux.HandleFunc("GET /edit-deck", editDeckHandler)
+	serveMux.HandleFunc("GET /js/edit-deck.js", editDeckJSHandler)
+	serveMux.HandleFunc("GET /edit-card", editCardHandler)
+	serveMux.HandleFunc("GET /js/edit-card.js", editCardJSHandler)
+	serveMux.HandleFunc("GET /study", studyHandler)
+	serveMux.HandleFunc("GET /js/study.js", studyJSHandler)
+	serveMux.HandleFunc("GET /create-user", createUserHandler)
+	serveMux.HandleFunc("GET /js/create-user.js", createUserJSHandler)
+	serveMux.HandleFunc("GET /create-deck", createDeckHandler)
+	serveMux.HandleFunc("GET /js/create-deck.js", createDeckJSHandler)
+	serveMux.HandleFunc("GET /create-card", createCardHandler)
+	serveMux.HandleFunc("GET /js/create-card.js", createCardJSHandler)
+	serveMux.HandleFunc("GET /api/study/next", apiCfg.nextCardHandler)
+	serveMux.HandleFunc("POST /api/study/evaluate", apiCfg.evaluateHandler)
+}
