@@ -22,6 +22,16 @@ This started as a capstone project for Boot.dev which I wanted to actually use.
 - Simple HTML / JavaScript frontend
 - Go HTTP API
 
+## Screenshots
+
+### Decks
+
+![Decks](docs/screenshots/yourdecks.png)
+
+### Study
+
+![Study](docs/screenshots/study.png)
+
 ## Scheduling
 
 There are really two scheduling systems in the project.
