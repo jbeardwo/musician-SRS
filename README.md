@@ -10,11 +10,14 @@ An exercise can be put onto a card and placed into a deck, which will continuous
 
 ## Motivation
 
-This started as a capstone project for Boot.dev which I wanted to actually use.
-When trying to use existing Spaced Repetition tools for music practice I ran into some issues:
-The way that the schedulers worked meant that you needed to wait for lessons to build up, rather than having them ready at a regular practice time.
-The schedulers also spaced exercises too far too quickly; when building muscle memory you need more iterations of an exercise.
-They also didn't have any progression, which is generally necessary to learn a music piece.
+This started as a capstone project for Boot.dev that I wanted to actually use.
+
+When trying to use existing spaced repetition tools for music practice, I ran into some issues:
+
+- The way that the schedulers worked meant that you needed to wait for exercises to build up, rather than having them ready at a regular practice time.
+- The schedulers also spaced exercises too far apart too quickly; when building muscle memory you need more iterations of an exercise.
+- They also didn't have any progression, which is generally necessary to learn a music piece.
+
 This tool aims to solve those problems.
 
 ## Quick Start
@@ -132,7 +135,7 @@ Active cards are stored in a priority queue. Due cards are preferred, while new 
 
 These mechanisms allow us to always have a card ready for the user.
 
-Again, Hard, Good, and Easy change the card's interval and ease factor differently.
+`Again`, `Hard`, `Good`, and `Easy` change the card's interval and ease factor differently.
 
 ### Mastery and tempo
 
@@ -144,17 +147,17 @@ Cards use three mastery states:
 - `playable`
 - `retained`
 
-Progress through these states is time gated. The current implementation uses an 8 hour wait for moving beyond playable and a 20 hour wait for retained material.
+Progress through these states is time-gated. The current implementation uses an 8-hour wait for moving beyond `playable` and a 20-hour wait for `retained` material.
 
-Again can move a card backward in mastery, while Good and Easy can advance it when enough real time has passed.
+`Again` can move a card backward in mastery, while `Good` and `Easy` can advance it when enough real time has passed.
 
-Tempo is tied into this system as well. Once a card is retained at its current tempo:
+Tempo is tied into this system as well. Once a card is `retained` at its current tempo:
 
 - that tempo becomes the mastered tempo
 - the current tempo increases by 5 BPM
 - mastery starts over for the new tempo
 
-If a card is repeatedly failed while in the challenge stage, its current tempo can drop by 2 BPM without losing the previously mastered tempo.
+If a card is repeatedly failed while in the `challenge` stage, its current tempo can drop by 2 BPM without losing the previously mastered tempo.
 
 The current design assumes users will use this 1-2 times per day for 10-15 minutes.
 
@@ -200,3 +203,9 @@ There are still things I could add, especially around authentication and fronten
 The current login system is identification rather than real authentication. Because of that, the deployed version is kept private rather than exposed directly to the internet.
 
 For now I am mostly interested in actually using it for music practice and finding problems that show up through real use.
+
+## Contributing
+
+To build and run the project locally, follow the [Quick Start](#quick-start) above.
+
+This is a personal project, so I'm not taking pull requests, but issues are welcome.
