@@ -1,14 +1,86 @@
-# Musician SRS
+# Musician's SeRiouS Practice Tool
 
-A spaced repetition system for music practice.
+**Musician SRS**: a spaced repetition system for instrument practice, with tempo and long-term mastery tracking.
+
+## Description
 
 The main idea is to take the idea of a flashcard SRS and modify it to be useful for instrument-based muscle memory.
 
 An exercise can be put onto a card and placed into a deck, which will continuously feed cards based on their general priority. In addition to normal spaced repetition scheduling, cards can have a tempo and a separate mastery state. This way we can balance short-term scheduling and long-term progression.
 
-This started as a capstone project for Boot.dev which I wanted to actually use.
+## Motivation
 
-## Features
+This started as a capstone project for Boot.dev which I wanted to actually use.
+When trying to use existing Spaced Repetition tools for music practice I ran into some issues:
+The way that the schedulers worked meant that you needed to wait for lessons to build up, rather than having them ready at a regular practice time.
+The schedulers also spaced exercises too far too quickly; when building muscle memory you need more iterations of an exercise.
+They also didn't have any progression, which is generally necessary to learn a music piece.
+This tool aims to solve those problems.
+
+## Quick Start
+
+Requirements:
+
+- Go 1.25.4 or newer
+- PostgreSQL
+- Goose
+
+Clone the repository:
+
+```
+git clone https://github.com/jbeardwo/musician-SRS.git
+cd musician-SRS
+```
+
+Create a PostgreSQL database and user for the application.
+
+Set `DATABASE_URL`:
+
+```
+export DATABASE_URL='host=localhost port=5432 user=musiciansrs password=YOUR_PASSWORD dbname=musiciansrs sslmode=disable'
+```
+
+The server uses port `8080` by default. This can be changed with the `PORT` environment variable.
+
+Install Goose if needed:
+
+```
+go install github.com/pressly/goose/v3/cmd/goose@latest
+```
+
+Run the migrations:
+
+```
+~/go/bin/goose -dir sql/schema postgres "$DATABASE_URL" up
+```
+
+Then start the server:
+
+```
+go run .
+```
+
+Open:
+
+```
+http://localhost:8080
+```
+
+Since there is no seeded test data, create a user through the application first.
+
+## Usage
+
+The UI supports:
+
+- creating a user
+- logging in by email
+- creating and editing decks
+- creating and editing cards
+- bulk generating cards
+- studying a deck
+- viewing the current tempo while practicing
+
+### Features
 
 - Users, decks, and cards stored in PostgreSQL
 - Create, edit, and delete decks and cards
@@ -22,17 +94,33 @@ This started as a capstone project for Boot.dev which I wanted to actually use.
 - Simple HTML / JavaScript frontend
 - Go HTTP API
 
-## Screenshots
+### Screenshots
 
-### Decks
+#### Decks
 
-![Decks](docs/screenshots/yourdecks.png)
+[![Decks](docs/screenshots/yourdecks.png)](docs/screenshots/yourdecks.png)
 
-### Study
+#### Study
 
-![Study](docs/screenshots/study.png)
+[![Study](docs/screenshots/study.png)](docs/screenshots/study.png)
 
-## Scheduling
+### Bulk card generation
+
+Entering a large number of similar music cards manually gets old very quickly, so the card creation page can generate combinations from templates.
+
+For example, a card using:
+
+```
+Play the {note}{accidental} {mode} scale
+```
+
+can generate cards for whichever notes, accidentals, and modes are selected.
+
+Cards without any replacement tags are created normally.
+
+## Design
+
+### Scheduling
 
 There are really two scheduling systems in the project.
 
@@ -46,7 +134,7 @@ These mechanisms allow us to always have a card ready for the user.
 
 Again, Hard, Good, and Easy change the card's interval and ease factor differently.
 
-## Mastery and tempo
+### Mastery and tempo
 
 The project also tracks longer-term mastery separately from normal SRS scheduling.
 
@@ -70,21 +158,7 @@ If a card is repeatedly failed while in the challenge stage, its current tempo c
 
 The current design assumes users will use this 1-2 times per day for 10-15 minutes.
 
-## Bulk card generation
-
-Entering a large number of similar music cards manually gets old very quickly, so the card creation page can generate combinations from templates.
-
-For example, a card using:
-
-```text
-Play the {note}{accidental} {mode} scale
-```
-
-can generate cards for whichever notes, accidentals, and modes are selected.
-
-Cards without any replacement tags are created normally.
-
-## Backend
+### Backend
 
 The server is written in Go using the standard `net/http` package.
 
@@ -94,7 +168,7 @@ Database schema changes use Goose migrations.
 
 The main backend pieces are split between:
 
-```text
+```
 internal/study/       scheduling and mastery logic
 internal/database/    generated database access
 sql/schema/           Goose migrations
@@ -103,74 +177,11 @@ sql/queries/          sqlc queries
 
 HTTP handlers are split by users, decks, cards, and studying rather than keeping the whole server in `main.go`.
 
-## Frontend
+### Frontend
 
 The frontend is currently plain HTML and JavaScript.
 
 There is no frontend framework. The browser talks directly to the Go API using `fetch`.
-
-The UI supports:
-
-- creating a user
-- logging in by email
-- creating and editing decks
-- creating and editing cards
-- bulk generating cards
-- studying a deck
-- viewing the current tempo while practicing
-
-The current login system is identification rather than real authentication. Because of that, the deployed version is kept private rather than exposed directly to the internet.
-
-## Running locally
-
-Requirements:
-
-- Go 1.25.4 or newer
-- PostgreSQL
-- Goose
-
-Clone the repository:
-
-```bash
-git clone https://github.com/jbeardwo/musician-SRS.git
-cd musician-SRS
-```
-
-Create a PostgreSQL database and user for the application.
-
-Set `DATABASE_URL`:
-
-```bash
-export DATABASE_URL='host=localhost port=5432 user=musiciansrs password=YOUR_PASSWORD dbname=musiciansrs sslmode=disable'
-```
-
-The server uses port `8080` by default. This can be changed with the `PORT` environment variable.
-
-Install Goose if needed:
-
-```bash
-go install github.com/pressly/goose/v3/cmd/goose@latest
-```
-
-Run the migrations:
-
-```bash
-~/go/bin/goose -dir sql/schema postgres "$DATABASE_URL" up
-```
-
-Then start the server:
-
-```bash
-go run .
-```
-
-Open:
-
-```text
-http://localhost:8080
-```
-
-Since there is no seeded test data, create a user through the application first.
 
 ## My Deployment
 
@@ -185,5 +196,7 @@ There is currently no public demo because the application does not have real aut
 The project is usable and is now running with persistent real data instead of the test database setup I used during development.
 
 There are still things I could add, especially around authentication and frontend polish, but the scheduling, mastery, deck/card management, bulk generation, database persistence, and deployment are all working.
+
+The current login system is identification rather than real authentication. Because of that, the deployed version is kept private rather than exposed directly to the internet.
 
 For now I am mostly interested in actually using it for music practice and finding problems that show up through real use.
